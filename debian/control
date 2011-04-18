@@ -1,0 +1,11 @@
+Source: python-dabepg
+Section: python
+Priority: optional
+Maintainer: Ben Poor <ben.poor@thisisglobal.com>
+Build-Depends: debhelper (>= 7), python (>= 2.6), cdbs
+Standards-Version: 3.8.0
+
+Package: python-dabepg
+Architecture: any
+Depends: ${python:Depends}, ${misc:Depends}
+Description: DAB EPG XML/binary implementation
