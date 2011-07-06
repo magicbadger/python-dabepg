@@ -1,4 +1,10 @@
-python-dabepg (1.0.0) testing; urgency=low
+python-dabepg (0.2.0) maverick; urgency=low
+
+  * fix for [8] - Duplicate serviceScope elements in scope node
+
+ -- Ben Poor <ben.poor@thisisglobal.com>  Wed, 06 Jul 2011 16:38:26 +0100
+
+python-dabepg (0.1.0) testing; urgency=low
 
   * Initial release
 

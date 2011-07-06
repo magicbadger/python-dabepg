@@ -38,6 +38,10 @@ class Bearer:
         if trigger is not None and re.match(TRIGGER_PATTERN, trigger) is None:
             raise ValueError('trigger does not match the following pattern ' + TRIGGER_PATTERN)
         
+    def __eq__(self, other):
+        if isinstance(other, Bearer):
+            return self.id == other.id and self.trigger == other.trigger            
+        
     def __str__(self):
         return 'id=%s' % self.id
     
@@ -391,7 +395,7 @@ class Schedule:
                     if end is None or end < time.billed_time + time.billed_duration:
                         end = time.billed_time + time.billed_duration
                 for bearer in location.bearers:
-                    if bearer not in services: services.append(bearer.id if isinstance(bearer, Bearer) else bearer)
+                    if bearer.id not in services: services.append(bearer.id if isinstance(bearer, Bearer) else bearer)
                     
         if start is None or end is None: return None    
     
