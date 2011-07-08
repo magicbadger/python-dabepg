@@ -1,3 +1,11 @@
+python-dabepg (0.2.1) maverick; urgency=low
+
+  * fix for [9] - serviceScope id attribute has 'id=' in value 
+  * fix for [10] - Error in get_scope(): AttributeError: ContentId 
+  instance has no attribute 'id' 
+
+ -- Pete Redhead <peteredhead@googlemail.com> Fri, 08 Jul 2011 16:39:12 +0100
+
 python-dabepg (0.2.0) maverick; urgency=low
 
   * fix for [8] - Duplicate serviceScope elements in scope node
