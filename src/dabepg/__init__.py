@@ -43,7 +43,7 @@ class Bearer:
             return self.id == other.id and self.trigger == other.trigger            
         
     def __str__(self):
-        return 'id=%s' % self.id
+        return '%s' % self.id
     
     def __repr__(self):
         return '<Bearer: %s>' % str(self)
@@ -395,7 +395,10 @@ class Schedule:
                     if end is None or end < time.billed_time + time.billed_duration:
                         end = time.billed_time + time.billed_duration
                 for bearer in location.bearers:
-                    if bearer.id not in services: services.append(bearer.id if isinstance(bearer, Bearer) else bearer)
+                    if isinstance(bearer, Bearer) and bearer.id not in services:
+                        services.append(bearer.id) # we have a Bearer
+                    elif isinstance(bearer, ContentId) and bearer not in services:
+                        services.append(bearer) # we have a ContentId
                     
         if start is None or end is None: return None    
     
