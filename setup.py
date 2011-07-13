@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='python-dabepg',
-      version='1.0.0',
+      version='0.3.0',
       description='DAB EPG XML/binary implementation',
       author='Ben Poor',
       author_email='ben.poor@thisisglobal.com',

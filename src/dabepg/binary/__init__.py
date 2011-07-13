@@ -40,8 +40,16 @@ class Element:
     def tobytes(self):
         log.debug('rendering element: %s', self)
         data = bitarray()
-        for attribute in self.attributes: data += attribute.tobytes()
-        for child in self.children: data += child.tobytes()
+        for attribute in self.attributes: 
+            try: data += attribute.tobytes()
+            except: 
+                log.exception('error rendering attribute %s of %s', attribute, self)
+                raise
+        for child in self.children: 
+            try: data += child.tobytes()
+            except: 
+                log.exception('error rendering child %s of %s', child, self)
+                raise
         if self.cdata is not None: data += self.cdata.tobytes()
         
         # b0-b7: element tag
@@ -239,46 +247,56 @@ def encode_timepoint(timepoint):
 
 def encode_contentid(id):
 
-    bits = bitarray(4)
-    bits.setall(False)
+    if id.sid and id.scids:
+        bits = bitarray(4)
+        bits.setall(False)
     
-    # b0: RFA(0)
+        # b0: RFA(0)
         
-    # b1: Ensemble Flag. Indicates whether ECC and EId are contained with the
-    # Content ID.
-    # 0 = ECC and EId are not present. The service that is referenced within the
-    # contentID is transmitted on the same ensemble as this EPG service
-    # 1 = ECC and EId are present.
-    if id.ecc is not None and id.eid is not None: bits[1] = True
+        # b1: Ensemble Flag. Indicates whether ECC and EId are contained with the
+        # Content ID.
+        # 0 = ECC and EId are not present. The service that is referenced within the
+        # contentID is transmitted on the same ensemble as this EPG service
+        # 1 = ECC and EId are present.
+        if id.ecc is not None and id.eid is not None: bits[1] = True
 
-    # b2: X-PAD flag. Indicates whether the addressed component is carried in an
-    # X-PAD channel.
-    # 0 = Is not carried in an X-PAD channel.
-    # 1 = Is carried in an X-PAD channel.
-    if id.xpad is not None: bits[2] = True
+        # b2: X-PAD flag. Indicates whether the addressed component is carried in an
+        # X-PAD channel.
+        # 0 = Is not carried in an X-PAD channel.
+        # 1 = Is carried in an X-PAD channel.
+        if id.xpad is not None: bits[2] = True
         
-    # b3: SId encoding flag
-    # 0 = Audio service (SId is 16bit)
-    # 1 = Data service (SId is 32bit)
-    # no audio support right now
+        # b3: SId encoding flag
+        # 0 = Audio service (SId is 16bit)
+        # 1 = Data service (SId is 32bit)
+        # no audio support right now
         
-    # b4-7: SCIdS
-    bits += int_to_bitarray(int(id.scids, 16), 4)
+        # b4-7: SCIdS
+        bits += int_to_bitarray(int(id.scids, 16), 4)
         
-    # optional next 8 bits: ECC
-    if id.ecc is not None:
+        # optional next 8 bits: ECC
+        if id.ecc is not None:
+            bits += int_to_bitarray(int(id.ecc, 16), 8)
+        
+        # optional next 16 bits: EId
+        if id.eid is not None:
+            bits += int_to_bitarray(int(id.eid, 16), 16)
+        
+        # next 16/32 bits: SId
+        bits += int_to_bitarray(int(id.sid, 16), 16)
+        
+        # optional next 8 bits: X-PAD extension
+        if id.xpad is not None:
+            bits += int_to_bitarray(int(id.xpad, 16), 8)
+
+    else: # we have an ensemble id. probably.
+        bits = bitarray()
+        
+        # b0: ECC
         bits += int_to_bitarray(int(id.ecc, 16), 8)
-        
-    # optional next 16 bits: EId
-    if id.eid is not None:
+
+        # b8: EId
         bits += int_to_bitarray(int(id.eid, 16), 16)
-        
-    # next 16/32 bits: SId
-    bits += int_to_bitarray(int(id.sid, 16), 16)
-        
-    # optional next 8 bits: X-PAD extension
-    if id.xpad is not None:
-        bits += int_to_bitarray(int(id.xpad, 16), 8)
         
     return bits
     
@@ -323,13 +341,33 @@ def marshall(obj):
     elif isinstance(obj, Epg): return marshall_epg(obj)
     
 def marshall_serviceinfo(info):
-    pass
+ 
+    if info.type == ServiceInfo.DRM: raise Exception("DRM not yet supported");
+
+    # serviceInformation
+    info_element = Element(0x03)
+    if info.version > 1: info_element.attributes.append(Attribute(0x80, info.version, 16)) 
+    if info.created: info_element.attributes.append(Attribute(0x81, info.created))
+    if info.originator: info_element.attributes.append(Attribute(0x82, info.originator))
+    if info.provider: info_element.attributes.append(Attribute(0x83, info.provider))
+
+    # only one ensemble per file
+    if len(info.ensembles) == 0: raise ValueError("You must specify an ensemble in this binary encoded Service Information file")
+    if len(info.ensembles) > 1: raise ValueError("Cannot have more than one ensemble per binary encoded Service Information file")
+
+    # ensemble
+    ensemble = info.ensembles[0]
+    ensemble_element = build_ensemble(ensemble)
+
+    info_element.children.append(ensemble_element)
+
+    return info_element.tobytes().tostring()
 
 def marshall_epg(epg):
     
     schedule = epg.schedule
     
-    # epg
+    # epg (default type is DAB, so no need to encode)
     epg_element = Element(0x02)
     
     # schedule
@@ -355,9 +393,9 @@ def marshall_epg(epg):
         if programme.version is not None:
             programme_element.attributes.append(Attribute(0x82, programme.version, 16))
         if programme.recommendation:
-            programme_element.attributes.append(Attribute(0x83, 0x02, 8))
+            programme_element.attributes.append(Attribute(0x83, 0x02, 8)) # hardcoded to 'yes'
         if not programme.onair:
-            programme_element.attributes.append(Attribute(0x84, 0x02, 8))
+            programme_element.attributes.append(Attribute(0x84, 0x02, 8)) # hardcoded to 'on-air'
         if programme.bitrate is not None:
             programme_element.attributes.append(Attribute(0x87, math.ceil(programme.bitrate), 16))
         # names
@@ -457,8 +495,6 @@ def build_mediagroup(media):
             mediagroup_element.children.append(media_element)
             if media.mimetype is not None:
                 media_element.attributes.append(Attribute(0x80, media.mimetype))
-            if media.language is not None:
-                media_element.attributes.append(Attribute(0x81, media.language))
             if media.url is not None:
                 media_element.attributes.append(Attribute(0x82, media.url))
             if media.type == Multimedia.LOGO_UNRESTRICTED:
@@ -473,6 +509,7 @@ def build_mediagroup(media):
                 media_element.attributes.append(Attribute(0x83, 0x05, 8))
             if media.type == Multimedia.LOGO_COLOUR_RECTANGLE:
                 media_element.attributes.append(Attribute(0x83, 0x06, 8))
+        # TODO language
     return mediagroup_element
     
 def build_genre(genre):
@@ -528,9 +565,90 @@ def build_programme_event(event):
         event_element.children.append(build_membership(membership))  
     # link
     for link in event.links:
-        event_element.children(build_link(link))   
+        event_element.children.append(build_link(link))   
              
     return event_element
+
+def build_service(service):
+    service_element = Element(0x28)
+
+    # version
+    if service.version > 1: service_element.attributes.append(Attribute(0x80, service.version, 16)) 
+
+    # format
+    # TODO 
+
+    # bitrate
+    if service.bitrate: service_element.attributes.append(Attribute(0x83, service.bitrate * 10, 16))
+
+    # service ID - TODO signal secondary ID
+    serviceid_element = Element(0x29)
+    serviceid_element.attributes.append(Attribute(0x80, service.id))    
+    service_element.children.append(serviceid_element)
+
+    # simulcast TODO
+
+    # names
+    for name in service.names:
+        service_element.children.append(build_name(name))
+
+    # media
+    if len(service.media) > 0:
+        service_element.children.append(build_mediagroup(service.media))
+
+    # genre
+    for genre in service.genres:
+        service_element.children.append(build_genre(genre))
+
+    # language TODO
+
+    # CA TODO
+
+    # keywords 
+    if len(service.keywords):
+        service_element.children.append(build_keywords(service.keywords))    
+
+    # links TODO
+
+    return service_element
+
+def build_keywords(keywords):
+    keywords_element = Element(0x16) # TODO set non-english locale
+    keywords_element.cdata = CData(",".join(keywords))
+    return keywords_element
+
+def build_ensemble(ensemble):
+    ensemble_element = Element(0x26)
+
+    ensemble_element.attributes.append(Attribute(0x80, ensemble.id))
+    if ensemble.version > 1: ensemble_element.attributes.append(Attribute(0x81, ensemble.version, 16))
+
+    # names
+    for name in ensemble.names:
+        ensemble_element.children.append(build_name(name))
+
+    # frequencies
+    if not len(ensemble.frequencies):
+        raise ValueError('At least one frequency must be defined for this ensemble')
+    for frequency in ensemble.frequencies:
+        frequency_element = Element(0x27)
+        frequency_element.attributes.append(Attribute(0x81, frequency, 24))
+        ensemble_element.children.append(frequency_element)
+
+    # media
+    if len(ensemble.media) > 0:
+        ensemble_element.children.append(build_mediagroup(ensemble.media))
+
+    # keywords
+
+    # links
+
+    # services
+    for service in ensemble.services:
+        service_element = build_service(service) 
+        ensemble_element.children.append(service_element)
+
+    return ensemble_element
     
 def int_to_bitarray(i, n):
     return bitarray(tuple((0,1)[i>>j & 1] for j in xrange(n-1,-1,-1)))

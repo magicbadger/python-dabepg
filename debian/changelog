@@ -1,3 +1,10 @@
+python-dabepg (0.3.0) maverick; urgency=low
+
+  * Added ServiceInfo binary marshalling
+  * Fixed some silly bugs
+
+ -- Ben Poor <ben.poor@thisisglobal.com>  Wed, 13 Jul 2011 14:53:55 +0100
+
 python-dabepg (0.2.1) maverick; urgency=low
 
   * fix for [9] - serviceScope id attribute has 'id=' in value 
