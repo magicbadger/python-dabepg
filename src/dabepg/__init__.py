@@ -49,7 +49,7 @@ class Bearer:
         return '<Bearer: %s>' % str(self)
         
 
-CONTENTID_PATTERN = '([0-9a-fA-F]{2})\\.([0-9a-fA-F]{4})\\.([0-9a-fA-F]{4,8})\\.([0-9a-fA-F]{1})'
+CONTENTID_PATTERN = '([0-9a-fA-F]{2})\\.([0-9a-fA-F]{4})(\\.([0-9a-fA-F]{4,8})\\.([0-9a-fA-F]{1})){0,1}'
 
 class ContentId:
     
