@@ -375,7 +375,7 @@ def parse_serviceinfo(root):
     if root.attrib.has_key('creationTime'): service_info.created = isodate.parse_datetime(root.attrib['creationTime'])
     if root.attrib.has_key('version'): service_info.version = int(root.attrib['version'])
     if root.attrib.has_key('originator'): service_info.originator = root.attrib['originator']
-    if root.attrib.has_key('serviceProvider'): service_info.originator = root.attrib['serviceProvider']
+    if root.attrib.has_key('serviceProvider'): service_info.provider = root.attrib['serviceProvider']
     if root.attrib.has_key('system') and root.attrib['system'] == 'DRM': raise Exception('parser only supports DAB EPG')
     if not root.attrib.has_key('{%s}lang' % XML_NAMESPACE): raise Exception('no xml:lang attribute declaration')
     
@@ -453,11 +453,12 @@ def parse_service(serviceElement):
     
     # attributes
     if serviceElement.attrib.has_key('version'): service.version = int(serviceElement.attrib['version'])
+    if serviceElement.attrib.has_key('bitrate'): service.bitrate = int(serviceElement.attrib['bitrate'])
     
     # subelements
-    for nameElement in serviceElement.findall("{%s}shortName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
-    for nameElement in serviceElement.findall("{%s}mediumName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
-    for nameElement in serviceElement.findall("{%s}longName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
+    for nameElement in serviceElement.findall("{%s}shortName" % EPG_NS): service.names.append(parse_name(nameElement))
+    for nameElement in serviceElement.findall("{%s}mediumName" % EPG_NS): service.names.append(parse_name(nameElement))
+    for nameElement in serviceElement.findall("{%s}longName" % EPG_NS): service.names.append(parse_name(nameElement))
     for mediaElement in serviceElement.findall("{%s}mediaDescription" % SERVICEINFO_NS): service.media.extend(parse_media(mediaElement))
     for genreElement in serviceElement.findall("{%s}genre" % EPG_NS): service.genres.append(parse_genre(genreElement))
     for linkElement in serviceElement.findall("{%s}link" % SERVICEINFO_NS): service.links.append(parse_link(linkElement))
