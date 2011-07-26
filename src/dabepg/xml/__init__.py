@@ -22,24 +22,29 @@
 
 from dabepg import *
 import xml.dom.minidom
+from elementtree.ElementTree import parse
+import isodate
+from xml.dom import XML_NAMESPACE
 
-
+EPG_NS = 'http://www.worlddab.org/schemas/epgDataTypes/14'
 SCHEDULE_NS = 'http://www.worlddab.org/schemas/epgSchedule/14'
+SERVICEINFO_NS = 'http://www.worlddab.org/schemas/epgSI/14'
 TYPES_NS = 'http://www.worlddab.org/schemas/epgDataTypes/14'
 XSI_NS = 'http://www.w3.org/2001/XMLSchema-instance'
-SCHEMA_LOCATION = 'http://www/worldab.org/schemas/epgSchedule/14'
+SCHEDULE_SCHEMA_LOCATION = '%s epgSchedule_14.xsd' % SCHEDULE_NS
+SERVICEINFO_SCHEMA_LOCATION = '%s epgSI_14.xsd' % SERVICEINFO_NS
 
 class MarshallListener:
     
     def on_element(self, doc, object, element):
         pass
     
-def marshall(obj, listener=MarshallListener()):
-    if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj, listener)
-    elif isinstance(obj, Epg): return marshall_epg(obj, listener)
+def marshall(obj, listener=MarshallListener(), **kwargs):
+    if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj, listener, **kwargs)
+    elif isinstance(obj, Epg): return marshall_epg(obj, listener, **kwargs)
     else: raise ValueError('neither a ServiceInfo nor an Epg be')
     
-def marshall_serviceinfo(info, listener=MarshallListener()):
+def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
     
     doc = xml.dom.minidom.Document()
     
@@ -59,7 +64,7 @@ def marshall_serviceinfo(info, listener=MarshallListener()):
     info_element.setAttribute('xmlns', SCHEDULE_NS)
     info_element.setAttribute('xmlns:epg', TYPES_NS)
     info_element.setAttribute('xmlns:xsi', XSI_NS)
-    info_element.setAttribute('xsi:schemaLocation', '%s %s' % (SCHEDULE_NS, 'epgSchedule_14.xsd'))
+    info_element.setAttribute('xsi:schemaLocation', SERVICEINFO_SCHEMA_LOCATION)
     info_element.setAttribute('xml:lang', 'en')
 
     # ensemble
@@ -114,9 +119,12 @@ def marshall_serviceinfo(info, listener=MarshallListener()):
         
     listener.on_element(doc, info, info_element)
         
-    return doc.toxml('UTF-8')
+    if kwargs.has_key('indent'):
+        return doc.toprettyxml(indent=kwargs['indent'], encoding='UTF-8')
+    else:
+        return doc.toxml('UTF-8')
 
-def marshall_epg(epg, listener=MarshallListener()):
+def marshall_epg(epg, listener=MarshallListener(), **kwargs):
     
     doc = xml.dom.minidom.Document()
     
@@ -131,7 +139,7 @@ def marshall_epg(epg, listener=MarshallListener()):
     epg_element.setAttribute('xmlns', SCHEDULE_NS)
     epg_element.setAttribute('xmlns:epg', TYPES_NS)
     epg_element.setAttribute('xmlns:xsi', XSI_NS)
-    epg_element.setAttribute('xsi:schemaLocation', '%s %s' % (SCHEDULE_NS, 'epgSchedule_14.xsd'))
+    epg_element.setAttribute('xsi:schemaLocation', SCHEDULE_SCHEMA_LOCATION)
     epg_element.setAttribute('xml:lang', 'en')
     
     epg_element.setAttribute('system', epg.type)
@@ -214,7 +222,10 @@ def marshall_epg(epg, listener=MarshallListener()):
         
     listener.on_element(doc, epg, epg_element)
         
-    return doc.toxml('UTF-8')
+    if kwargs.has_key('indent'):
+        return doc.toprettyxml(indent=kwargs['indent'], encoding='UTF-8')
+    else:
+        return doc.toxml('UTF-8')
     
 def build_name(doc, name):
     name_element = None
@@ -359,3 +370,127 @@ def get_serviceinfo_filename(date, channel):
 
     return '%s_%s_SI.xml' % (date.strftime('%Y%m%d'), channel) 
 
+def parse_serviceinfo(root):
+    service_info = ServiceInfo()
+    if root.attrib.has_key('creationTime'): service_info.created = isodate.parse_datetime(root.attrib['creationTime'])
+    if root.attrib.has_key('version'): service_info.version = int(root.attrib['version'])
+    if root.attrib.has_key('originator'): service_info.originator = root.attrib['originator']
+    if root.attrib.has_key('serviceProvider'): service_info.originator = root.attrib['serviceProvider']
+    if root.attrib.has_key('system') and root.attrib['system'] == 'DRM': raise Exception('parser only supports DAB EPG')
+    if not root.attrib.has_key('{%s}lang' % XML_NAMESPACE): raise Exception('no xml:lang attribute declaration')
+    
+    for ensembleElement in root.findall("{%s}ensemble" % SERVICEINFO_NS):
+        service_info.ensembles.append(parse_ensemble(ensembleElement))
+    
+    return service_info
+
+def parse_epg(doc):
+    pass
+
+def parse_name(nameElement):
+    if nameElement.tag == '{%s}shortName' % EPG_NS:
+        return ShortName(nameElement.text)
+    elif nameElement.tag == '{%s}mediumName' % EPG_NS:
+        return MediumName(nameElement.text)
+    elif nameElement.tag == '{%s}longName' % EPG_NS:
+        return LongName(nameElement.text)
+    else:
+        raise ValueError('unknown name element: %s' % nameElement)
+    
+def parse_description(descriptionElement):
+    if descriptionElement.tag == '{%s}shortDescription' % EPG_NS:
+        return ShortDescription(descriptionElement.text)
+    elif descriptionElement.tag == '{%s}longDescription' % EPG_NS:
+        return LongDescription(descriptionElement.text)   
+    else:
+        raise ValueError('unknown description element: %s' % descriptionElement)
+    
+def parse_multimedia(multimediaElement):
+    multimedia = Multimedia(multimediaElement.attrib['url'])
+    if multimediaElement.attrib.has_key('type'):
+        type = multimediaElement.attrib['type']
+        if type == 'logo_colour_square': multimedia.type = Multimedia.LOGO_COLOUR_SQUARE
+        if type == 'logo_colour_rectangle': multimedia.type = Multimedia.LOGO_COLOUR_RECTANGLE
+        if type == 'logo_mono_rectangle': multimedia.type = Multimedia.LOGO_MONO_RECTANGLE
+        if type == 'logo_mono_square': multimedia.type = Multimedia.LOGO_MONO_SQUARE
+        if type == 'logo_unrestricted': 
+            multimedia.type = Multimedia.LOGO_UNRESTRICTED
+            if not multimediaElement.attrib.has_key('mimetype') or not multimediaElement.attrib.has_key('width') or not multimediaElement.attrib.has_key('height'):
+                raise ValueError('must specify mimetype, width and height for unrestricted logo')
+    if multimediaElement.attrib.has_key('mimetype'): multimedia.mime = multimediaElement.attrib['mimetype']
+    if multimediaElement.attrib.has_key('width'): multimedia.width = int(multimediaElement.attrib['width'])
+    if multimediaElement.attrib.has_key('height'): multimedia.width = int(multimediaElement.attrib['height'])  
+    return multimedia      
+    
+def parse_media(mediaElement):
+    media = []
+    for descriptionElement in mediaElement.findall("{%s}shortDescription" % EPG_NS): media.append(parse_description(descriptionElement))    
+    for descriptionElement in mediaElement.findall("{%s}longDescription" % EPG_NS): media.append(parse_description(descriptionElement)) 
+    for multimediaElement in mediaElement.findall("{%s}multimedia" % EPG_NS): media.append(parse_multimedia(multimediaElement))
+    return media
+
+def parse_genre(genreElement):
+    genre = Genre(genreElement.attrib['href'])
+    genre.name = genreElement.findtext('{%s}name' % EPG_NS)
+    return genre  
+
+def parse_link(linkElement):
+    link = Link(linkElement.attrib['url'])
+    if linkElement.attrib.has_key('description'):
+        link.description = linkElement.attrib['description']
+    if linkElement.attrib.has_key('mimeType'):
+        link.mimetype = linkElement.attrib['mimeType']    
+    if linkElement.attrib.has_key('expiryTime'):
+        link.expiry = isodate.parse_datetime(linkElement.attrib['expiryTime']) 
+    return link
+        
+def parse_keywords(keywordsElement):
+    return map(lambda x: x.strip(), keywordsElement.text.split(','))
+    
+def parse_service(serviceElement):
+    id = ContentId.fromstring(serviceElement.find("{%s}serviceID" % SERVICEINFO_NS).attrib['id'])
+    service = Service(id)
+    
+    # attributes
+    if serviceElement.attrib.has_key('version'): service.version = int(serviceElement.attrib['version'])
+    
+    # subelements
+    for nameElement in serviceElement.findall("{%s}shortName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
+    for nameElement in serviceElement.findall("{%s}mediumName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
+    for nameElement in serviceElement.findall("{%s}longName" % SCHEDULE_NS): service.names.append(parse_name(nameElement))
+    for mediaElement in serviceElement.findall("{%s}mediaDescription" % SERVICEINFO_NS): service.media.extend(parse_media(mediaElement))
+    for genreElement in serviceElement.findall("{%s}genre" % EPG_NS): service.genres.append(parse_genre(genreElement))
+    for linkElement in serviceElement.findall("{%s}link" % SERVICEINFO_NS): service.links.append(parse_link(linkElement))
+    for keywordsElement in serviceElement.findall("{%s}keywords" % SERVICEINFO_NS): service.keywords.extend(parse_keywords(keywordsElement))
+    
+    return service
+
+def parse_ensemble(ensembleElement):
+    ensemble = Ensemble(ContentId.fromstring(ensembleElement.attrib['id']))
+    for nameElement in ensembleElement.findall("{%s}shortName" % SCHEDULE_NS): ensemble.names.append(parse_name(nameElement))
+    for nameElement in ensembleElement.findall("{%s}mediumName" % SCHEDULE_NS): ensemble.names.append(parse_name(nameElement))
+    for nameElement in ensembleElement.findall("{%s}longName" % SCHEDULE_NS): ensemble.names.append(parse_name(nameElement))
+    
+    for frequencyElement in ensembleElement.findall("{%s}frequency" % SERVICEINFO_NS):
+        ensemble.frequencies.append(int(frequencyElement.attrib['kHz']))
+        
+    for serviceElement in ensembleElement.findall("{%s}service" % SERVICEINFO_NS):
+        ensemble.services.append(parse_service(serviceElement))
+    return ensemble
+
+def unmarshall(i):
+    
+    # read data
+    import StringIO
+    d = i if isinstance(i, file) else StringIO.StringIO(i)
+    
+    doc = parse(d)
+    root = doc.getroot()
+    
+    if root.tag == '{%s}serviceInformation' % SERVICEINFO_NS:
+        return parse_serviceinfo(root)
+    elif root.tag == '{%s}epg' % SCHEDULE_NS:
+        return parse_epg(root)
+    else:
+        raise Exception('Arrgh! this be neither serviceInformation nor epg - to Davy Jones\' locker with ye!')   
+    
