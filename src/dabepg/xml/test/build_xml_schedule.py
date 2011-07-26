@@ -24,7 +24,7 @@ import unittest
 
 from dabepg import *
 from dabepg.xml import marshall
-from dateutil.tz import tzlocal
+
 
 class Test(unittest.TestCase):
 
@@ -39,7 +39,7 @@ class Test(unittest.TestCase):
         programme.names.append(LongName('Gilles Peterson: Worldwide'))
         
         location = Location()
-        location.times.append(Time(datetime.datetime(2003, 12, 18, 0, 0, 0, 0, tzlocal()), datetime.timedelta(hours=2), actual_time=datetime.datetime(2003, 12, 18, 0, 0, 0, 0), actual_duration=datetime.timedelta(hours=2)))
+        location.times.append(Time(datetime.datetime(2003, 12, 18, 0, 0, 0, 0), datetime.timedelta(hours=2), actual_time=datetime.datetime(2003, 12, 18, 0, 0, 0, 0), actual_duration=datetime.timedelta(hours=2)))
         location.bearers.append(Bearer('e1.ce15.c221.0'))
         programme.locations.append(location)
         
@@ -66,9 +66,7 @@ class Test(unittest.TestCase):
         programme.events.append(event2)
         
         schedule.programmes.append(programme)
-        
-        from xml.dom.minidom import parseString
-        print parseString(marshall(epg)).toprettyxml()
+        print marshall(epg)
     
 
 if __name__ == "__main__":
