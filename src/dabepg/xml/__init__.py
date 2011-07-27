@@ -384,8 +384,65 @@ def parse_serviceinfo(root):
     
     return service_info
 
-def parse_epg(doc):
-    pass
+def parse_location(locationElement):
+    location = Location()
+    
+
+def parse_programme_event(programmeEventElement):
+    event = ProgrammeEvent(programmeEventElement.attrib['shortId'])
+    if programmeEventElement.attrib.has_key('id'): event.crid = programmeEventElement.attrib['id']
+    if programmeEventElement.attrib.has_key('version'): event.version = int(programmeEventElement.attrib['version'])
+    if programmeEventElement.attrib.has_key('recommendation'): event.recommendation = bool(programmeEventElement.attrib['recommendation'])
+    if programmeEventElement.attrib.has_key('broadcast'): event.onair = True if programmeEventElement.attrib['broadcast'] == 'on-air' else False
+    if programmeEventElement.attrib.has_key('bitrate'): event.bitrate = int(programmeEventElement.attrib['bitrate'])
+
+    for nameElement in programmeEventElement.findall("{%s}shortName" % EPG_NS): event.names.append(parse_name(nameElement))
+    for nameElement in programmeEventElement.findall("{%s}mediumName" % EPG_NS): event.names.append(parse_name(nameElement))
+    for nameElement in programmeEventElement.findall("{%s}longName" % EPG_NS): event.names.append(parse_name(nameElement))
+    for mediaElement in programmeEventElement.findall("{%s}mediaDescription" % EPG_NS): event.media.extend(parse_media(mediaElement))
+    for locationElement in programmeEventElement.findall("{%s}location" % EPG_NS): event.locations.append(parse_location(locationElement))
+    for genreElement in programmeEventElement.findall("{%s}genre" % EPG_NS): event.genres.append(parse_genre(genreElement))
+    for linkElement in programmeEventElement.findall("{%s}link" % SCHEDULE_NS): event.links.append(parse_link(linkElement))
+    for keywordsElement in programmeEventElement.findall("{%s}keywords" % SCHEDULE_NS): event.keywords.extend(parse_keywords(keywordsElement))    
+    
+    return event
+
+def parse_programme(programmeElement):
+    programme = Programme(programmeElement.attrib['shortId'])
+    if programmeElement.attrib.has_key('id'): programme.crid = programmeElement.attrib['id']
+    if programmeElement.attrib.has_key('version'): programme.version = int(programmeElement.attrib['version'])
+    if programmeElement.attrib.has_key('recommendation'): programme.recommendation = bool(programmeElement.attrib['recommendation'])
+    if programmeElement.attrib.has_key('broadcast'): programme.onair = True if programmeElement.attrib['broadcast'] == 'on-air' else False
+    if programmeElement.attrib.has_key('bitrate'): programme.bitrate = int(programmeElement.attrib['bitrate'])
+
+    for nameElement in programmeElement.findall("{%s}shortName" % EPG_NS): programme.names.append(parse_name(nameElement))
+    for nameElement in programmeElement.findall("{%s}mediumName" % EPG_NS): programme.names.append(parse_name(nameElement))
+    for nameElement in programmeElement.findall("{%s}longName" % EPG_NS): programme.names.append(parse_name(nameElement))
+    for mediaElement in programmeElement.findall("{%s}mediaDescription" % EPG_NS): programme.media.extend(parse_media(mediaElement))
+    for locationElement in programmeElement.findall("{%s}location" % EPG_NS): programme.locations.append(parse_location(locationElement))
+    for genreElement in programmeElement.findall("{%s}genre" % EPG_NS): programme.genres.append(parse_genre(genreElement))
+    for linkElement in programmeElement.findall("{%s}link" % SCHEDULE_NS): programme.links.append(parse_link(linkElement))
+    for keywordsElement in programmeElement.findall("{%s}keywords" % SCHEDULE_NS): programme.keywords.extend(parse_keywords(keywordsElement))    
+    
+    for programmeEventElement in programmeElement.findall("{%s}programmeEvent" % EPG_NS): programme.events.append(parse_programme_event(programmeEventElement))
+    
+    return programme
+
+def parse_schedule(scheduleElement):
+    schedule = Schedule()
+    if scheduleElement.attrib.has_key('creationTime'): schedule.created = isodate.parse_datetime(scheduleElement.attrib['creationTime'])
+    if scheduleElement.attrib.has_key('version'): schedule.version = int(scheduleElement.attrib['version'])
+    if scheduleElement.attrib.has_key('originator'): schedule.originator = scheduleElement.attrib['originator']
+    
+    for programmeElement in scheduleElement.findall('{%s}programme' % SCHEDULE_NS):
+        schedule.programmes.append(parse_programme(programmeElement))
+    return schedule
+
+def parse_epg(root):
+    if root.attrib.has_key('system') and root.attrib['system'] == 'DRM': raise Exception('parser only supports DAB EPG')
+    schedule = parse_schedule(root.find("{%s}schedule" % SCHEDULE_NS))
+    epg = Epg(schedule)
+    return epg
 
 def parse_name(nameElement):
     if nameElement.tag == '{%s}shortName' % EPG_NS:
