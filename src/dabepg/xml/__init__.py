@@ -384,9 +384,32 @@ def parse_serviceinfo(root):
     
     return service_info
 
+def parse_time(timeElement):
+    if timeElement.tag == '{%s}time' % EPG_NS:
+        time = Time(isodate.parse_datetime(timeElement.attrib['time']),
+                    isodate.parse_duration(timeElement.attrib['duration']),
+                    isodate.parse_datetime(timeElement.attrib.get('actualTime')) if timeElement.attrib.has_key('actualTime') else None,
+                    isodate.parse_duration(timeElement.attrib.get('actualDuration')) if timeElement.attrib.has_key('actualDuration') else None)
+        return time
+    if timeElement.tag == '{%s}relativeTime' % EPG_NS:
+        time = RelativeTime(isodate.parse_duration(timeElement.attrib['time']),
+                    isodate.parse_duration(timeElement.attrib['duration']),
+                    isodate.parse_duration(timeElement.attrib.get('actualTime')) if timeElement.attrib.has_key('actualTime') else None,
+                    isodate.parse_duration(timeElement.attrib.get('actualDuration')) if timeElement.attrib.has_key('actualDuration') else None)
+        return time
+    else:
+        raise ValueError('unknown time element: %s' % timeElement)
+
+def parse_bearer(bearerElement):
+    bearer = Bearer(ContentId.fromstring(bearerElement.attrib['id']))
+    return bearer   
+
 def parse_location(locationElement):
     location = Location()
-    
+    for timeElement in locationElement.findall('{%s}time' % EPG_NS): location.times.append(parse_time(timeElement))
+    for timeElement in locationElement.findall('{%s}relativeTime' % EPG_NS): location.times.append(parse_time(timeElement))
+    for bearerElement in locationElement.findall('{%s}bearer' % EPG_NS): location.bearers.append(parse_bearer(bearerElement))
+    return location 
 
 def parse_programme_event(programmeEventElement):
     event = ProgrammeEvent(programmeEventElement.attrib['shortId'])
