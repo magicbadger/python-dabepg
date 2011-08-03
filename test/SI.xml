@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceInformation creationTime="2001-02-28T00:00:00"
+	originator="BBC" serviceProvider="BBC" system="DAB" version="2"
+	xml:lang="en" xmlns="http://www.worlddab.org/schemas/epgSI/14"
+	xmlns:epg="http://www.worlddab.org/schemas/epgDataTypes/14" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.worlddab.org/schemas/epgSI/14 epgSI_14.xsd">
+	<ensemble id="e1.ce15">
+		<epg:shortName>BBC</epg:shortName>
+		<epg:mediumName>BBC National</epg:mediumName>
+		<frequency kHz="225648" type="primary" />
+		<service bitrate="160" format="audio">
+			<serviceID id="e1.ca15.c221.0" />
+			<epg:shortName>Radio 1</epg:shortName>
+			<epg:mediumName>BBC Radio 1</epg:mediumName>
+			<mediaDescription>
+				<epg:shortDescription><![CDATA[Rock and pop music from the BBC.]]></epg:shortDescription>
+			</mediaDescription>
+			<mediaDescription>
+				<epg:multimedia type="logo_colour_square"
+					url="http://www.bbc.co.uk/radio1/images/r1logo.png" />
+			</mediaDescription>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:3.6.7">
+				<epg:name><![CDATA[Rap/Hip Hop/Reggae]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:3.6.8">
+				<epg:name><![CDATA[Electronic/Club/Urban/Dance]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:2.5.0">
+				<epg:name><![CDATA[ARTISTIC PERFORMANCE]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:1.1.0">
+				<epg:name><![CDATA[ENTERTAINMENT]]></epg:name>
+			</epg:genre>
+			<link mimeType="text/html" url="http://www.bbc.co.uk/radio1" />
+			<keywords><![CDATA[music, pop, rock, dance, hip-hop, soul]]></keywords>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c222.0" />
+			<epg:shortName>Radio 2</epg:shortName>
+			<epg:mediumName>BBC Radio 2</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c223.0" />
+			<epg:shortName>Radio 3</epg:shortName>
+			<epg:mediumName>BBC Radio 3</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c224.0" />
+			<epg:shortName>Radio 4</epg:shortName>
+			<epg:mediumName>BBC Radio 4</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c225.0" />
+			<epg:shortName>Radio 5</epg:shortName>
+			<epg:mediumName>BBC Radio 5</epg:mediumName>
+		</service>
+	</ensemble>
+</serviceInformation>

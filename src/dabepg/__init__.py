@@ -69,8 +69,8 @@ class ContentId:
         sid = None
         scids = None
         if len(matcher.groups()) > 2:
-            sid = matcher.group(3)
-            scids = matcher.group(4)
+            sid = matcher.group(4)
+            scids = matcher.group(5)
         return ContentId(ecc, eid, sid, scids)
     
     def __str__(self):

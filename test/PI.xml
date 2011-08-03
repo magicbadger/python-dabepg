@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<epg system="DAB" xml:lang="en"
+	xmlns="http://www.worlddab.org/schemas/epgSchedule/14" xmlns:epg="http://www.worlddab.org/schemas/epgDataTypes/14"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.worlddab.org/schemas/epgSchedule/14 epgSchedule_14.xsd">
+	<schedule creationTime="2011-07-27T09:03:35.389000+01:00"
+		originator="Global Radio" version="2">
+		<scope startTime="2003-12-18T00:00:00" stopTime="2003-12-18T02:00:00">
+			<serviceScope id="e1.ce15.c221.0" />
+		</scope>
+		<programme id="crid://bbc.co.uk/4969758988" recommendation="yes"
+			shortId="213456" version="1">
+			<epg:mediumName>Gilles Peterson</epg:mediumName>
+			<epg:longName>Gilles Peterson: Worldwide</epg:longName>
+			<epg:location>
+				<epg:time duration="PT2H" time="2003-12-18T00:00:00" />
+				<epg:bearer id="e1.ce15.c221.0" />
+			</epg:location>
+			<epg:mediaDescription>
+				<epg:shortDescription><![CDATA[Gilles Peterson brings you two hours of global beats and the best of cool. Including the Worldwide family. KV5 are live from Maida Value with special guests.]]></epg:shortDescription>
+			</epg:mediaDescription>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:3.6.7">
+				<epg:name><![CDATA[Rap/Hip Hop/Reggae]]></epg:name>
+			</epg:genre>
+			<memberOf crid="crid://www.bbc.co.uk/WorldwideGroup"
+				shortId="1000" />
+			<link description="Email:" url="mailto:gilles.peterson@bbc.co.uk" />
+			<epg:programmeEvent id="crid://www.bbc.co.uk;dab/BC81123456a"
+				recommendation="yes" shortId="6353">
+				<epg:shortName>Herbert</epg:shortName>
+				<epg:mediumName>Herbert Live</epg:mediumName>
+				<epg:longName>Live session from Herbert</epg:longName>
+				<epg:location>
+					<epg:relativeTime duration="PT15M" time="PT45M" />
+				</epg:location>
+				<epg:mediaDescription>
+					<epg:shortDescription><![CDATA[Live session from Herbert, recorded at Cargo on 24/2/01]]></epg:shortDescription>
+				</epg:mediaDescription>
+			</epg:programmeEvent>
+			<epg:programmeEvent shortId="59033">
+				<epg:mediumName>PM</epg:mediumName>
+				<epg:location>
+					<epg:time duration="PT1H" time="2003-12-18T17:00:00" />
+					<epg:bearer id="e1.ce15.c224.0" />
+				</epg:location>
+			</epg:programmeEvent>
+		</programme>
+	</schedule>
+</epg>
