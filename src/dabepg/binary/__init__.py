@@ -299,6 +299,32 @@ def encode_contentid(id):
         bits += int_to_bitarray(int(id.eid, 16), 16)
         
     return bits
+
+def decode_contentid(bits):
+    """decodes a ContentId from a bitarray"""
+    
+    if bits.length() == 32: # EnsembleId
+        ecc = int(bits[8:16].01(), 2)
+        eid = int(bits[16:32].01(), 2)
+        return ContentId(ecc, eid)
+    else: # ContentId
+        ecc = None
+        eid = None
+        sid = None
+        scids = int(bits[4:8].01(), 2)
+        xpad = None
+        if bits[1]:
+            ecc = int(bits[16:32].01(), 2)
+            eid = int(bits[32:48].01(), 2)
+            if bits[3]: sid = int(bits[48:80].01(), 2)
+            else: sid = int(bits[48:64].01(), 2)
+            if bits[2]: xpad = int(bits[:-8].01(), 2)
+        else:
+            if bits[3]: sid = int(bits[16:48].01(), 2)
+            else: sid = int(bits[16:32].01(), 2)
+            if bits[2]: xpad = int(bits[:-8].01(), 2)
+        
+        return ContentId(ecc, eid, sid, scids, xpad)            
     
 class CData:
     
