@@ -79,6 +79,25 @@ class Element:
         bits += data
         return bits
     
+    def __iter__(self):
+        return iter(self.children)
+    
+    def has_child(self, tag):
+        return len(self.get_children(tag))
+    
+    def get_children(self, tag=None):
+        if tag is not None:
+            return [x for x in self.children if x.tag == tag]
+        return self.children
+    
+    def has_attribute(self, tag):
+        return len(self.get_attributes(tag))
+    
+    def get_attributes(self, tag=None):
+        if tag is not None:
+            return [x for x in self.attributes if x.tag == tag]
+        return self.attributes    
+    
     @staticmethod
     def frombits(bits):
         
@@ -125,16 +144,15 @@ class Element:
                 i += data.length()
             # default content ID
             elif tag == 0x05:
-                print bitarray_to_hex(data)
                 default_contentid = decode_contentid(data)
                 i += data.length()
             else:
                 raise ValueError('unknown data tag: 0x%02x for parent 0x%02x' % (t, tag))
                 
-        e = Element(tag, attributes=attributes, children=children, cdata=cdata), start/8 + datalength
+        e = Element(tag, attributes=attributes, children=children, cdata=cdata)
         if tag == 0x02: e.default_contentid = default_contentid  
         
-        return e
+        return e, start/8 + datalength
         
     def __str__(self):
         return 'tag=0x%02X, attributes=%s, children=%s, cdata=%s' % (self.tag, self.attributes, self.children, self.cdata)
@@ -233,20 +251,21 @@ class Attribute:
         if isinstance(parent, Element): parent_tag = parent.tag
         else: parent_tag = int(parent)
         if (parent_tag, tag) in [
-                (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80)
+                (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80),
+                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87)
         ]: # integer
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
             value = int(data.to01(), 2)
-        elif tag in []: # duration
+        elif (parent_tag, tag) in [(0x2c, 0x81), (0x2c, 0x83)]: # duration
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as duration', parent_tag, tag)
             value = datetime.timedelta(seconds=int(data.to01(), 2))
-        elif tag in [(0x20, 0x80)]: # CRID
+        elif (parent_tag, tag) in [(0x20, 0x80), (0x1c, 0x80)]: # CRID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as CRID', parent_tag, tag)
             value = Crid(data.tostring())
-        elif tag in []: # genre
+        elif (parent_tag, tag) in []: # genre
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as genre', parent_tag, tag)
             value = decode_genre(data)
-        elif (parent_tag, tag) in [(0x20, 0x81), (0x21, 0x81), (0x24, 0x80), (0x24, 0x81)]: # time
+        elif (parent_tag, tag) in [(0x20, 0x81), (0x21, 0x81), (0x24, 0x80), (0x24, 0x81), (0x2c, 0x80), (0x2c, 0x82)]: # time
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as timepoint', parent_tag, tag)
             value = decode_timepoint(data)
         elif (parent_tag, tag) in [(0x20, 0x82)]: # string
@@ -255,9 +274,15 @@ class Attribute:
         elif (parent_tag, tag) in [(0x25, 0x80)]: # bearer
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as bearer', parent_tag, tag)
             value = decode_contentid(data)
-        elif tag in []: # content ID
+        elif (parent_tag, tag) in []: # content ID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
             value = decode_contentid(data)
+        elif (parent_tag, tag) in [(0x1c, 0x84)]:
+            try:
+                value = decode_enum(parent_tag, tag, data)
+            except:
+                logger.warning('error decoding enum for parent 0x%02x from tag: 0x%02x - IGNORING for now' % (parent_tag, tag))
+                value = data
         else:
             raise ValueError('dont know how to decode attribute value for parent 0x%02x from tag: 0x%02x' % (parent_tag, tag))
         
@@ -377,13 +402,13 @@ def decode_timepoint(bits):
     timepoint = datetime.datetime.combine(date, datetime.time())
 
     if bits[20]:
-        timepoint.replace(hour=int(bits[21:26].to01(), 2))
-        timepoint.replace(minute=int(bits[26:32].to01(), 2))
-        timepoint.replace(second=int(bits[32:38].to01(), 2))
-        timepoint.replace(microsecond=int(bits[38:48].to01(), 2) * 1000)
+        timepoint = timepoint.replace(hour=int(bits[21:26].to01(), 2),
+                                      minute=int(bits[26:32].to01(), 2),
+                                      second=int(bits[32:38].to01(), 2),
+                                      microsecond=int(bits[38:48].to01(), 2) * 1000)
     else:
-        timepoint.replace(hour=int(bits[21:26].to01(), 2))
-        timepoint.replace(minute=int(bits[26:32].to01(), 2))    
+        timepoint = timepoint.replace(hour=int(bits[21:26].to01(), 2), 
+                                      minute=int(bits[26:32].to01(), 2))
     return timepoint
 
 def encode_contentid(id):
@@ -482,7 +507,28 @@ def decode_contentid(bits):
     if xpad_flag:
         xpad = int(bits[i+3:i+8].to01(), 2)
         
-    return ContentId(ecc, eid, sid, scids, xpad)            
+    return ContentId(ecc, eid, sid, scids, xpad)   
+
+"""Map of possible num values and their binary equivalents.
+   Note that not all the values are currently implemented, which will
+   cause the decoder to skip over their details"""
+enum_values = {
+    (0x02, 0x80, 0x01) : Epg.DAB,
+    (0x02, 0x80, 0x02) : Epg.DRM,
+    (0x1c, 0x84, 0x01) : "on-air",
+    (0x1c, 0x84, 0x02) : "off-air"
+}
+
+def decode_enum(parent_tag, tag, bits):
+    
+    if bits.length() != 8: raise ValueError('enum data for parent/attribute 0x%02x/0x%02x is of incorrect length: %d bytes' % (parent_tag, tag, bits.length()/8))
+    
+    value = int(bits.to01(), 2)
+    key = (parent_tag, tag, value)
+    if key in enum_values.keys():
+        return enum_values.get(key)
+    else:
+        raise NotImplementedError('enum for parent/attribute 0x%02x/0x%02x not implemented' % (parent_tag, tag))
     
 class CData:
     
@@ -833,6 +879,66 @@ def build_ensemble(ensemble):
         ensemble_element.children.append(service_element)
 
     return ensemble_element
+
+def print_info(e):
+
+    print e.attributes
+    print e.children
+    print e.cdata
+
+def parse_time(e):
+    
+    billed_time = e.get_attributes(0x80)[0].value
+    billed_duration = e.get_attributes(0x81)[0].value
+    actual_time = None
+    if e.has_attribute(0x82): actual_time = e.get_attributes(0x82)[0].value
+    actual_duration = None
+    if e.has_attribute(0x82): actual_duration = e.get_attributes(0x83)[0].value
+    time = Time(billed_time, billed_duration, actual_time, actual_duration)
+    return time
+
+def parse_location(e):
+    
+    location = Location()
+    
+    # times
+    for c in e.get_children(0x2c):
+        location.times.append(parse_time(c))
+    
+    return location
+
+def parse_programme(e):
+    
+    shortid = e.get_attributes(0x81)[0].value
+    programme = Programme(shortid)
+    
+    # names
+    for c in e.get_children(0x10):
+        programme.names.append(ShortName(c.cdata.value))
+    for c in e.get_children(0x11):
+        programme.names.append(MediumName(c.cdata.value))
+    for c in e.get_children(0x12):
+        programme.names.append(LongName(c.cdata.value))                
+    
+    # location
+    for c in e.get_children(0x19):
+        programme.locations.append(parse_location(c))
+    
+    return programme
+ 
+    
+
+def parse_epg(e):
+    
+    schedule = Schedule()
+    
+    schedule_element = e.get_children(0x21)[0]
+    programme_elements = schedule_element.get_children(0x1c)
+    for p in programme_elements: 
+        programme = parse_programme(p)
+        schedule.programmes.append(programme)
+    
+    return Epg(schedule, type)
     
 def int_to_bitarray(i, n):
     return bitarray(tuple((0,1)[i>>j & 1] for j in xrange(n-1,-1,-1)))
@@ -862,13 +968,13 @@ def unmarshall(i):
     else:
         logger.debug('object is a string of %d bytes', len(str(i)))
         b.fromstring(str(i))
-    print bitarray_to_hex(b)
         
     e, size = Element.frombits(b)
     logger.debug('unmarshalled element %s of length %d bytes', e, size)
     if e.tag == 0x03:
         print 'SERVICE INFO', e
     elif e.tag == 0x02:
-        print 'EPG', e
+        epg = parse_epg(e)
+        return epg
     else:
         raise Exception('Arrgh! this be neither serviceInformation nor epg - to Davy Jones\' locker with ye!')    
