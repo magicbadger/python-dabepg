@@ -366,8 +366,23 @@ class Programme:
         self.links = []
         self.events = []
         
+    def get_name(self, max_length=LongName.max_length):
+        """returns the first name set with a length at or below the max_length field, which 
+           defaults to the MAX_LENGTH of a LongName field"""
+        for type in [ShortName, MediumName, LongName]:
+            for name in [x for x in self.names if isinstance(x, type)]:
+                if len(name.text) <= max_length: return name
+                
+    def get_times(self):
+        """returns a list of (datetime, timedelta) tuples collated from the billed times of the locations
+           of this programme"""
+        times = []
+        for location in self.locations:
+            times.extend([(x.get_billed_time(), x.get_billed_duration()) for x in location.times])
+        return times
+        
     def __str__(self):
-        return str(self.names)
+        return str(self.get_name())
     
     def __repr__(self):
         return '<Programme: %s>' % str(self)    
