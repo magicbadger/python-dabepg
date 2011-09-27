@@ -54,11 +54,33 @@ CONTENTID_PATTERN = '([0-9a-fA-F]{2})\\.([0-9a-fA-F]{4})(\\.([0-9a-fA-F]{4,8})\\
 class ContentId:
     
     def __init__(self, ecc, eid, sid=None, scids=None, xpad=None):
-        self.ecc = ecc
-        self.eid = eid
+        """Values can be passed in as hex string or integers"""
         self.sid = sid
         self.scids = scids
         self.xpad = xpad
+        
+        # ECC    
+        if isinstance(ecc, int): self.ecc = ecc
+        else: self.ecc = int(ecc, 16)
+        
+        # EId
+        if isinstance(eid, int): self.eid = eid
+        else: self.eid = int(eid, 16)
+            
+        # SId
+        if sid:
+            if isinstance(sid, int): self.sid = sid
+            else: self.sid = int(sid, 16)
+                  
+        # SCIdS
+        if scids:
+            if isinstance(scids, int): self.scids = scids
+            else: self.scids = int(scids, 16)                      
+
+        # XPAD
+        if xpad:
+            if isinstance(xpad, int): self.xpad = xpad
+            else: self.xpad = int(xpad, 16)  
         
     @classmethod
     def fromstring(cls, string):
@@ -74,10 +96,13 @@ class ContentId:
         return ContentId(ecc, eid, sid, scids)
     
     def __str__(self):
-        id = '%s.%s' % (self.ecc, self.eid)
+        id = '%x.%x' % (self.ecc, self.eid)
         if self.sid is not None and self.scids is not None:
-            id += '.%s.%s' % (self.sid, self.scids)
+            id += '.%x.%x' % (self.sid, self.scids)
         return id
+    
+    def __repr__(self):
+        return '<ContentId: %s>' % str(self)
     
     def __eq__(self, other):
         return str(self) == str(other)

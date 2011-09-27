@@ -26,7 +26,7 @@ import math
 import datetime, pytz
 import logging
 
-log = logging.getLogger("dabepg.binary")
+logger = logging.getLogger("dabepg.binary")
 
 class Element:
     
@@ -35,20 +35,20 @@ class Element:
         self.attributes = (attributes if attributes is not None else [])
         self.children = (children if children is not None else [])
         self.cdata = cdata
-        log.debug('created new element: %s', self)
+        logger.debug('created new element: %s', self)
         
     def tobytes(self):
-        log.debug('rendering element: %s', self)
+        logger.debug('rendering element: %s', self)
         data = bitarray()
         for attribute in self.attributes: 
             try: data += attribute.tobytes()
             except: 
-                log.exception('error rendering attribute %s of %s', attribute, self)
+                logger.exception('error rendering attribute %s of %s', attribute, self)
                 raise
         for child in self.children: 
             try: data += child.tobytes()
             except: 
-                log.exception('error rendering child %s of %s', child, self)
+                logger.exception('error rendering child %s of %s', child, self)
                 raise
         if self.cdata is not None: data += self.cdata.tobytes()
         
@@ -79,55 +79,113 @@ class Element:
         bits += data
         return bits
     
+    @staticmethod
+    def frombits(bits):
+        
+        # b0-b7: element tag
+        tag = int(bits[0:8].to01(), 2)
+        if tag < 0x02 or tag > 0x30: raise ValueError('invalid value for tag: %d' % tag)
+        
+        # b8-15: element data length (0-253 bytes)
+        # b16-31: extended element length (256-65536 bytes)
+        # b16-39: extended element length (65537-16777216 bytes)
+        datalength = int(bits[8:16].to01(), 2)
+        start = 16
+        if datalength >= 254 and datalength <= 1<<16:
+            datalength = int(bits[16:32].to01(), 2)
+            start = 32
+        elif datalength > 1<<16 and datalength <= 1<<24: 
+            datalength = int(bits[16:40].to01(), 2)
+            start = 40
+        elif datalength > 1<<24:
+            raise ValueError('element data length exceeds the maximum allowed by the extended element length (24bits): %s > %s' + datalength + " > " + (1<<24))
+        data = bits[start:start+(datalength * 8)]
+                
+        i = 0
+        children = []
+        attributes = []
+        cdata = None
+        logger.debug('parsing data of length %d bytes for element with tag 0x%02x', datalength, tag)
+        default_contentid = None
+        while i < data.length():
+            t = int(data[i:i+8].to01(), 2)
+            # attributes
+            if t >= 0x80 and t <= 0x87:
+                attribute, size = Attribute.frombits(tag, data[i:])
+                attributes.append(attribute)
+                i += (size * 8)
+            # children
+            elif t >= 0x02 and t <= 0x30:
+                child, size = Element.frombits(data[i:])
+                children.append(child)
+                i += (size * 8)
+            # cdata
+            elif t == 0x01:
+                cdata = CData(data.tostring())
+                i += data.length()
+            # default content ID
+            elif tag == 0x05:
+                print bitarray_to_hex(data)
+                default_contentid = decode_contentid(data)
+                i += data.length()
+            else:
+                raise ValueError('unknown data tag: 0x%02x for parent 0x%02x' % (t, tag))
+                
+        e = Element(tag, attributes=attributes, children=children, cdata=cdata), start/8 + datalength
+        if tag == 0x02: e.default_contentid = default_contentid  
+        
+        return e
+        
     def __str__(self):
         return 'tag=0x%02X, attributes=%s, children=%s, cdata=%s' % (self.tag, self.attributes, self.children, self.cdata)
     
     def __repr__(self):
         return '<Element: 0x%02X>' % self.tag
-    
+        
 class Attribute:
     
-    def __init__(self, tag, value, bits=None):
+    def __init__(self, tag, value, bitlength=None):
         self.tag = tag
         self.value = value
-        self.bits = bits
+        self.bitlength = bitlength
+        logger.debug('created new attribute: %s', self)
     
     def tobytes(self):
 
         # encode data
         data = None
         if isinstance(self.value, int) or isinstance(self.value, long): # integer
-            if self.bits is None: raise ValueError('attribute with int value has no bitlength specification: %s' % self)
-            log.debug('encoding attribute %s as int with %d bits', self, self.bits)
+            if self.bitlength is None: raise ValueError('attribute with int value has no bitlength specification: %s' % self)
+            logger.debug('encoding attribute %s as int with %d bits', self, self.bits)
             data = int_to_bitarray(self.value, self.bits)
         elif isinstance(self.value, datetime.timedelta): # duration
             data = int_to_bitarray(self.value.seconds, 16)
-            log.debug('encoding attribute %s as duration', self)
+            logger.debug('encoding attribute %s as duration', self)
         elif isinstance(self.value, Crid): # CRID
             data = bitarray()
             data.fromstring(str(self.value))
-            log.debug('encoding attribute %s as CRID', self)
+            logger.debug('encoding attribute %s as CRID', self)
         elif isinstance(self.value, Genre): # genre
             data = encode_genre(self.value)
-            log.debug('encoding attribute %s as genre', self)
+            logger.debug('encoding attribute %s as genre', self)
         elif isinstance(self.value, datetime.datetime): # time
             data = encode_timepoint(self.value)
-            log.debug('encoding attribute %s as timepoint', self)
+            logger.debug('encoding attribute %s as timepoint', self)
         elif isinstance(self.value, str): # string
             data = bitarray()
             data.fromstring(self.value)
-            log.debug('encoding attribute %s as string', self)
+            logger.debug('encoding attribute %s as string', self)
         elif isinstance(self.value, Bearer):
             data = encode_contentid(self.value.id)
-            log.debug('encoding attribute %s as content ID from bearer', self)
+            logger.debug('encoding attribute %s as content ID from bearer', self)
         elif isinstance(self.value, ContentId):
             data = encode_contentid(self.value)
-            log.debug('encoding attribute %s as content ID', self)
+            logger.debug('encoding attribute %s as content ID', self)
         else:
             raise ValueError('dont know how to encode this type: %s = %s' % (self.value.__class__.__name__, str(self.value)))
         data.fill()
         
-        # b0-b7: element tag
+        # b0-b7: tag
         bits = int_to_bitarray(self.tag, 8)
   
         # b8-15: element data length (0-253 bytes)
@@ -151,11 +209,75 @@ class Attribute:
         bits += data
         return bits
     
+    @staticmethod
+    def frombits(parent, bits):
+        # b0-b7: attribute tag
+        tag = int(bits[0:8].to01(), 2)
+        
+        # b8-15: attribute data length (0-253 bytes)
+        # b16-31: extended attribute length (256-65536 bytes)
+        # b16-39: extended attribute length (65537-16777216 bytes)
+        datalength = int(bits[8:16].to01(), 2)
+        start = 16
+        if datalength >= 254 and datalength <= 1<<16:
+            datalength = int(bits[16:32].to01(), 2)
+            start = 32
+        elif datalength > 1<<16 and datalength <= 1<<24: 
+            datalength = int(bits[16:40].to01(), 2)
+            start = 40
+        elif datalength > 1<<24:
+            raise ValueError('attribute data length exceeds the maximum allowed by the extended attribute length (24bits): %s > %s' + datalength + " > " + (1<<24))
+        data = bits[start:start+(datalength * 8)]
+                
+        # decode data
+        if isinstance(parent, Element): parent_tag = parent.tag
+        else: parent_tag = int(parent)
+        if (parent_tag, tag) in [
+                (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80)
+        ]: # integer
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
+            value = int(data.to01(), 2)
+        elif tag in []: # duration
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as duration', parent_tag, tag)
+            value = datetime.timedelta(seconds=int(data.to01(), 2))
+        elif tag in [(0x20, 0x80)]: # CRID
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as CRID', parent_tag, tag)
+            value = Crid(data.tostring())
+        elif tag in []: # genre
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as genre', parent_tag, tag)
+            value = decode_genre(data)
+        elif (parent_tag, tag) in [(0x20, 0x81), (0x21, 0x81), (0x24, 0x80), (0x24, 0x81)]: # time
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as timepoint', parent_tag, tag)
+            value = decode_timepoint(data)
+        elif (parent_tag, tag) in [(0x20, 0x82)]: # string
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as string', parent_tag, tag)
+            value = data.tostring()
+        elif (parent_tag, tag) in [(0x25, 0x80)]: # bearer
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as bearer', parent_tag, tag)
+            value = decode_contentid(data)
+        elif tag in []: # content ID
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
+            value = decode_contentid(data)
+        else:
+            raise ValueError('dont know how to decode attribute value for parent 0x%02x from tag: 0x%02x' % (parent_tag, tag))
+        
+        return Attribute(tag, value), start/8 + datalength  
+    
     def __str__(self):
         return str('0x%x' % self.tag)
     
     def __repr__(self):
         return '<Attribute: tag=%s, value=%s>' % (str(self), self.value)
+    
+genre_map = dict(
+    IntentionCS=1,
+    FormatCS=2,
+    ContentCS=3, # what happened to 4?!
+    OriginationCS=5,
+    ContentAlertCS=6,
+    MediaTypeCS=7,
+    AtmosphereCS=8
+)
     
 def encode_genre(genre):
     
@@ -166,27 +288,10 @@ def encode_genre(genre):
     bits.setall(False)
     
     # b0-3: RFU(0)
-    
     # b4-7: CS
     cs = segments[4]
-    if cs == 'IntentionCS':
-        cs_val = 1
-    elif cs == 'FormatCS':
-        cs_val = 2
-    elif cs == 'ContentCS':
-        cs_val = 3
-    elif cs == 'IntendedAudienceCS':
-        cs_val = 4
-    elif cs == 'OriginationCS':
-        cs_val = 5
-    elif cs == 'ContentAlertCS':
-        cs_val = 6
-    elif cs == 'MediaTypeCS':
-        cs_val = 7
-    elif cs == 'AtmosphereCS':
-        cs_val = 8
-    else:
-        raise ValueError('unknown CS in genre: %s' % cs)
+    if cs in genre_map.keys(): cs_val = genre_map[cs]
+    else: raise ValueError('unknown CS in genre: %s' % cs)
     bits += int_to_bitarray(cs_val, 4)
     
     # optional schema levels
@@ -196,7 +301,25 @@ def encode_genre(genre):
             bits += int_to_bitarray(int(level), 8)
         
     return bits
+
+def decode_genre(bits):
     
+    # b4-7: CS
+    cs_val = int(bits[4:8].to01(), 2)
+    if cs_val in genre_map.values(): cs = [x[0] for x in genre_map.items() if x[1] == cs_val]
+    else: raise ValueError('unknown CS value for genre: %d' % cs_val)
+    
+    level = '%d' % cs_val
+    
+    # optional schema levels
+    if bits.length() > 8:
+        i = 8
+        while i < bits.length():
+            sublevel = int(bits[i:i+8].to01(), 2)
+            level += '.%d' % sublevel
+            i += 8
+    
+    return Genre('urn:tva:metadata:cs:ContentCS:2002:%s' % level)
     
 def encode_timepoint(timepoint):
     
@@ -206,12 +329,12 @@ def encode_timepoint(timepoint):
     # b0: RFA(0)
         
     # b1-17: Date
-    a = (14 - timepoint.month) / 12;
-    y = timepoint.year + 4800 - a;
-    m = timepoint.month + (12 * a) - 3;
-    jdn = timepoint.day + ((153 * m) + 2) / 5 + (365 * y) + (y / 4) - (y / 100) + (y / 400) - 32045;
-    jd = jdn + (timepoint.hour - 12) / 24 + timepoint.minute / 1440 + timepoint.second / 86400;
-    mjd = (int)(jd - 2400000.5);
+    a = (14 - timepoint.month) / 12
+    y = timepoint.year + 4800 - a
+    m = timepoint.month + (12 * a) - 3
+    jdn = timepoint.day + ((153 * m) + 2) / 5 + (365 * y) + (y / 4) - (y / 100) + (y / 400) - 32045
+    jd = jdn + (timepoint.hour - 12) / 24 + timepoint.minute / 1440 + timepoint.second / 86400
+    mjd = (int)(jd - 2400000.5)
     bits += int_to_bitarray(mjd, 17)
         
     # b18: RFA(0)
@@ -245,6 +368,24 @@ def encode_timepoint(timepoint):
             
     return bits
 
+def decode_timepoint(bits):
+    
+    if not bits.any(): return None # NOW
+    
+    mjd = int(bits[1:18].to01(), 2)
+    date = datetime.datetime.fromtimestamp((mjd - 40587) * 86400)
+    timepoint = datetime.datetime.combine(date, datetime.time())
+
+    if bits[20]:
+        timepoint.replace(hour=int(bits[21:26].to01(), 2))
+        timepoint.replace(minute=int(bits[26:32].to01(), 2))
+        timepoint.replace(second=int(bits[32:38].to01(), 2))
+        timepoint.replace(microsecond=int(bits[38:48].to01(), 2) * 1000)
+    else:
+        timepoint.replace(hour=int(bits[21:26].to01(), 2))
+        timepoint.replace(minute=int(bits[26:32].to01(), 2))    
+    return timepoint
+
 def encode_contentid(id):
 
     if id.sid and id.scids:
@@ -272,59 +413,76 @@ def encode_contentid(id):
         # no audio support right now
         
         # b4-7: SCIdS
-        bits += int_to_bitarray(int(id.scids, 16), 4)
+        bits += int_to_bitarray(id.scids, 4)
         
         # optional next 8 bits: ECC
         if id.ecc is not None:
-            bits += int_to_bitarray(int(id.ecc, 16), 8)
+            bits += int_to_bitarray(id.ecc, 8)
         
         # optional next 16 bits: EId
         if id.eid is not None:
-            bits += int_to_bitarray(int(id.eid, 16), 16)
+            bits += int_to_bitarray(id.eid, 16)
         
         # next 16/32 bits: SId
-        bits += int_to_bitarray(int(id.sid, 16), 16)
+        bits += int_to_bitarray(id.sid, 16)
         
         # optional next 8 bits: X-PAD extension
         if id.xpad is not None:
-            bits += int_to_bitarray(int(id.xpad, 16), 8)
+            bits += int_to_bitarray(id.xpad, 8)
 
     else: # we have an ensemble id. probably.
         bits = bitarray()
         
         # b0: ECC
-        bits += int_to_bitarray(int(id.ecc, 16), 8)
+        bits += int_to_bitarray(id.ecc, 8)
 
         # b8: EId
-        bits += int_to_bitarray(int(id.eid, 16), 16)
+        bits += int_to_bitarray(id.eid, 16)
         
     return bits
 
 def decode_contentid(bits):
     """decodes a ContentId from a bitarray"""
     
-    if bits.length() == 32: # EnsembleId
-        ecc = int(bits[8:16].01(), 2)
-        eid = int(bits[16:32].01(), 2)
-        return ContentId(ecc, eid)
-    else: # ContentId
-        ecc = None
-        eid = None
-        sid = None
-        scids = int(bits[4:8].01(), 2)
-        xpad = None
-        if bits[1]:
-            ecc = int(bits[16:32].01(), 2)
-            eid = int(bits[32:48].01(), 2)
-            if bits[3]: sid = int(bits[48:80].01(), 2)
-            else: sid = int(bits[48:64].01(), 2)
-            if bits[2]: xpad = int(bits[:-8].01(), 2)
-        else:
-            if bits[3]: sid = int(bits[16:48].01(), 2)
-            else: sid = int(bits[16:32].01(), 2)
-            if bits[2]: xpad = int(bits[:-8].01(), 2)
+    # b0: RFA(0)
+    
+    # b1: Ensemble Flag. Indicates whether ECC and EId are contained with the
+    # Content ID.
+    # 0 = ECC and EId are not present. The service that is referenced within the
+    # contentID is transmitted on the same ensemble as this EPG service
+    # 1 = ECC and EId are present.
+    ecc = None
+    eid = None
+    sid = None
+    scids = None
+    xpad = None
+    ensemble_flag = bits[1]
+    xpad_flag = bits[2]
+    sid_flag = bits[3]
+    
+    # SCIdS
+    scids = int(bits[4:8].to01(), 2)
+    
+    # ECC, EId
+    i = 8
+    if ensemble_flag:
+        ecc = int(bits[8:16].to01(), 2)
+        eid = int(bits[16:32].to01(), 2)
+        i = 32
+    
+    # SId
+    if not sid_flag:
+        sid = int(bits[i:i+16].to01(), 2)
+        i += 16
+    elif sid_flag:
+        sid = int(bits[i:i+32].to01(), 2)
+        i += 32
         
-        return ContentId(ecc, eid, sid, scids, xpad)            
+    # XPAD
+    if xpad_flag:
+        xpad = int(bits[i+3:i+8].to01(), 2)
+        
+    return ContentId(ecc, eid, sid, scids, xpad)            
     
 class CData:
     
@@ -693,4 +851,24 @@ def bitarray_to_binary(bits):
             bytes.append(bits[j:j+8].to01())
         rows.append(' '.join(bytes))
     return '\r\n'.join(rows)
-       
+      
+def unmarshall(i):
+    logger.debug('unmarshalling object of type: %s', type(i))
+    
+    b = bitarray()
+    if isinstance(i, file):
+        logger.debug('object is a file')
+        b.fromfile(i)
+    else:
+        logger.debug('object is a string of %d bytes', len(str(i)))
+        b.fromstring(str(i))
+    print bitarray_to_hex(b)
+        
+    e, size = Element.frombits(b)
+    logger.debug('unmarshalled element %s of length %d bytes', e, size)
+    if e.tag == 0x03:
+        print 'SERVICE INFO', e
+    elif e.tag == 0x02:
+        print 'EPG', e
+    else:
+        raise Exception('Arrgh! this be neither serviceInformation nor epg - to Davy Jones\' locker with ye!')    
