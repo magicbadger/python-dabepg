@@ -268,7 +268,7 @@ class Attribute:
         else: parent_tag = int(parent)
         if (parent_tag, tag) in [
                 (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80),
-                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82)
+                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82), (0x03, 0x80), (0x26, 0x81)
         ]: # integer
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
             value = int(data.to01(), 2)
@@ -281,19 +281,17 @@ class Attribute:
         elif (parent_tag, tag) in []: # genre
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as genre', parent_tag, tag)
             value = decode_genre(data)
-        elif (parent_tag, tag) in [(0x20, 0x81), (0x21, 0x81), (0x24, 0x80), (0x24, 0x81), (0x2c, 0x80), (0x2c, 0x82)]: # time
+        elif (parent_tag, tag) in [(0x20, 0x81), (0x21, 0x81), (0x24, 0x80), (0x24, 0x81), (0x2c, 0x80), (0x2c, 0x82),
+                                   (0x03, 0x81)]: # time
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as timepoint', parent_tag, tag)
             value = decode_timepoint(data)
-        elif (parent_tag, tag) in [(0x20, 0x82)]: # string
+        elif (parent_tag, tag) in [(0x20, 0x82), (0x03, 0x82), (0x03, 0x83)]: # string
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as string', parent_tag, tag)
             value = data.tostring()
-        elif (parent_tag, tag) in [(0x25, 0x80)]: # bearer
-            logger.debug('decoding tag/attribute 0x%02x/0x%02x as bearer', parent_tag, tag)
-            value = decode_contentid(data)
-        elif (parent_tag, tag) in []: # content ID
+        elif (parent_tag, tag) in [(0x25, 0x80), (0x26, 0x80), (0x29, 0x80)]: # content ID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
             value = decode_contentid(data)
-        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84)]:
+        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84), (0x03, 0x84)]:
             try:
                 value = decode_enum(parent_tag, tag, data)
             except:
@@ -497,32 +495,43 @@ def decode_contentid(bits):
     sid = None
     scids = None
     xpad = None
-    ensemble_flag = bits[1]
-    xpad_flag = bits[2]
-    sid_flag = bits[3]
+
     
-    
-    # SCIdS
-    scids = int(bits[4:8].to01(), 2)
-    
-    # ECC, EId
-    i = 8
-    if ensemble_flag:
-        ecc = int(bits[8:16].to01(), 2)
-        eid = int(bits[16:32].to01(), 2)
-        i = 32
-    
-    # SId
-    if not sid_flag:
-        sid = int(bits[i:i+16].to01(), 2)
-        i += 16
-    elif sid_flag:
-        sid = int(bits[i:i+32].to01(), 2)
-        i += 32
+    try:
+        if bits.length() == 24: # EnsembleId
+            # ECC, EId
+            ecc = int(bits[0:8].to01(), 2)
+            eid = int(bits[8:24].to01(), 2)
+            
+        else:    
+            ensemble_flag = bits[1]
+            xpad_flag = bits[2]
+            sid_flag = bits[3]
+            
+            # SCIdS
+            scids = int(bits[4:8].to01(), 2)
+            
+            # ECC, EId
+            i = 8
+            if ensemble_flag:
+                ecc = int(bits[8:16].to01(), 2)
+                eid = int(bits[16:32].to01(), 2)
+                i = 32
+            
+            # SId
+            if not sid_flag:
+                sid = int(bits[i:i+16].to01(), 2)
+                i += 16
+            elif sid_flag:
+                sid = int(bits[i:i+32].to01(), 2)
+                i += 32
+                
+            # XPAD
+            if xpad_flag:
+                xpad = int(bits[i+3:i+8].to01(), 2)
+    except:
+        raise ValueError('error parsing ContentId from data: %s', bitarray_to_hex(bits))
         
-    # XPAD
-    if xpad_flag:
-        xpad = int(bits[i+3:i+8].to01(), 2)
         
     return ContentId(ecc, eid, sid, scids, xpad)   
 
@@ -1048,8 +1057,6 @@ def parse_programme(e):
     # location
     for c in e.get_children(0x19):
         programme.locations.append(parse_location(c))
-        
-
     
     return programme
  
@@ -1066,10 +1073,53 @@ def parse_schedule(e):
     return schedule
 
 def parse_epg(e):
-    
     schedule = parse_schedule(e.get_children(0x21)[0])
-    
     return Epg(schedule, type)
+
+def parse_service(e):
+    
+    id = e.get_children(0x29)[0].get_attributes(0x80)[0].value
+    service = Service(id)
+    
+    # names
+    for c in e.get_children(0x10):
+        val = apply_token_table(c.cdata.value, e)
+        service.names.append(ShortName(val))
+    for c in e.get_children(0x11):
+        val = apply_token_table(c.cdata.value, e)
+        service.names.append(MediumName(val))
+    for c in e.get_children(0x12):
+        val = apply_token_table(c.cdata.value, e)
+        service.names.append(LongName(val)) 
+    return service
+    
+
+def parse_ensemble(e):    
+    id = e.get_attributes(0x80)[0].value
+    ensemble = Ensemble(id)
+    
+    # names
+    for c in e.get_children(0x10):
+        val = apply_token_table(c.cdata.value, e)
+        ensemble.names.append(ShortName(val))
+    for c in e.get_children(0x11):
+        val = apply_token_table(c.cdata.value, e)
+        ensemble.names.append(MediumName(val))
+    for c in e.get_children(0x12):
+        val = apply_token_table(c.cdata.value, e)
+        ensemble.names.append(LongName(val)) 
+        
+    # services
+    for c in e.get_children(0x28):
+        ensemble.services.append(parse_service(c))
+    
+    return ensemble 
+
+def parse_service_information(e):
+    service_info = ServiceInfo()
+    ensemble = parse_ensemble(e.get_children(0x26)[0])
+    service_info.ensembles.append(ensemble)
+    return service_info
     
 def int_to_bitarray(i, n):
     return bitarray(tuple((0,1)[i>>j & 1] for j in xrange(n-1,-1,-1)))
@@ -1103,7 +1153,8 @@ def unmarshall(i):
     e = Element.frombits(b)
     logger.debug('unmarshalled element %s', e)
     if e.tag == 0x03:
-        print 'SERVICE INFO', e
+        si = parse_service_information(e)
+        return si
     elif e.tag == 0x02:
         epg = parse_epg(e)
         return epg
