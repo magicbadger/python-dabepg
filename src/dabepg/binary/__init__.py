@@ -103,56 +103,72 @@ class Element:
         
         # b0-b7: element tag
         tag = int(bits[0:8].to01(), 2)
-        if tag < 0x02 or tag > 0x30: raise ValueError('invalid value for tag: %d' % tag)
-        
+        if tag < 0x02 or tag > 0x30: raise ValueError('invalid value for tag: 0x%02x' % tag)
+               
         # b8-15: element data length (0-253 bytes)
         # b16-31: extended element length (256-65536 bytes)
         # b16-39: extended element length (65537-16777216 bytes)
         datalength = int(bits[8:16].to01(), 2)
         start = 16
-        if datalength >= 254 and datalength <= 1<<16:
+        if datalength == 0xfe:
             datalength = int(bits[16:32].to01(), 2)
             start = 32
-        elif datalength > 1<<16 and datalength <= 1<<24: 
+        elif datalength == 0xff:
             datalength = int(bits[16:40].to01(), 2)
             start = 40
-        elif datalength > 1<<24:
-            raise ValueError('element data length exceeds the maximum allowed by the extended element length (24bits): %s > %s' + datalength + " > " + (1<<24))
-        data = bits[start:start+(datalength * 8)]
+        data = bits[start : start + (datalength * 8)]
                 
         i = 0
-        children = []
-        attributes = []
-        cdata = None
+        e = Element(tag)
         logger.debug('parsing data of length %d bytes for element with tag 0x%02x', datalength, tag)
-        default_contentid = None
         while i < data.length():
-            t = int(data[i:i+8].to01(), 2)
-            # attributes
-            if t >= 0x80 and t <= 0x87:
-                attribute, size = Attribute.frombits(tag, data[i:])
-                attributes.append(attribute)
-                i += (size * 8)
-            # children
-            elif t >= 0x02 and t <= 0x30:
-                child, size = Element.frombits(data[i:])
-                children.append(child)
-                i += (size * 8)
-            # cdata
-            elif t == 0x01:
-                cdata = CData(data.tostring())
-                i += data.length()
-            # default content ID
-            elif tag == 0x05:
-                default_contentid = decode_contentid(data)
-                i += data.length()
-            else:
-                raise ValueError('unknown data tag: 0x%02x for parent 0x%02x' % (t, tag))
+            
+            child_tag = int(data[i:i+8].to01(), 2)            
+            child_datalength = int(data[i+8:i+16].to01(), 2)
+            logger.debug('child tag 0x%02x for parent 0x%02x has data length of %d bytes', child_tag, tag, child_datalength)
+            start = 16
+            if child_datalength == 0xfe:
+                child_datalength = int(data[i+16:i+32].to01(), 2)
+                start = 32
+            elif child_datalength == 0xff: 
+                child_datalength = int(bits[i+16:i+40].to01(), 2)
+                start = 40
+            end = i + start + (child_datalength * 8)
+ 
+            child_data = data[i + start : i + start + (child_datalength * 8)] 
+            logger.debug('child tag 0x%02x has data: %s', child_tag, bitarray_to_hex(child_data))
                 
-        e = Element(tag, attributes=attributes, children=children, cdata=cdata)
-        if tag == 0x02: e.default_contentid = default_contentid  
-        
-        return e, start/8 + datalength
+            # attributes
+            if child_tag >= 0x80 and child_tag <= 0x87:
+                attribute = Attribute.frombits(tag, data[i:end])
+                e.attributes.append(attribute)
+            # token table
+            elif child_tag == 0x04:
+                tokens = decode_tokentable(child_data)
+                e.tokens = tokens
+                logger.debug('parsed token table: %s', tokens)
+            # default content ID
+            elif child_tag == 0x05:
+                default_contentid = decode_contentid(child_data)
+                e.default_contentid = default_contentid
+            # default language
+            elif child_tag == 0x06: 
+                pass               
+            # children
+            elif child_tag >= 0x02 and child_tag <= 0x30:
+                child = Element.frombits(data[i:end])
+                child.parent = e
+                e.children.append(child)
+            # cdata
+            elif child_tag == 0x01:
+                cdata = CData.frombits(data[i:end])
+                e.cdata = cdata
+            else:
+                raise ValueError('unknown element 0x%02x under parent 0x%02x' % (child_tag, tag))
+            
+            i = end
+            
+        return e
         
     def __str__(self):
         return 'tag=0x%02X, attributes=%s, children=%s, cdata=%s' % (self.tag, self.attributes, self.children, self.cdata)
@@ -252,16 +268,16 @@ class Attribute:
         else: parent_tag = int(parent)
         if (parent_tag, tag) in [
                 (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80),
-                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87)
+                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82)
         ]: # integer
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
             value = int(data.to01(), 2)
         elif (parent_tag, tag) in [(0x2c, 0x81), (0x2c, 0x83)]: # duration
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as duration', parent_tag, tag)
             value = datetime.timedelta(seconds=int(data.to01(), 2))
-        elif (parent_tag, tag) in [(0x20, 0x80), (0x1c, 0x80)]: # CRID
+        elif (parent_tag, tag) in [(0x20, 0x80), (0x1c, 0x80), (0x17, 0x80)]: # CRID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as CRID', parent_tag, tag)
-            value = Crid(data.tostring())
+            value = Crid.fromstring(data.tostring())
         elif (parent_tag, tag) in []: # genre
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as genre', parent_tag, tag)
             value = decode_genre(data)
@@ -277,7 +293,7 @@ class Attribute:
         elif (parent_tag, tag) in []: # content ID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
             value = decode_contentid(data)
-        elif (parent_tag, tag) in [(0x1c, 0x84)]:
+        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84)]:
             try:
                 value = decode_enum(parent_tag, tag, data)
             except:
@@ -286,7 +302,7 @@ class Attribute:
         else:
             raise ValueError('dont know how to decode attribute value for parent 0x%02x from tag: 0x%02x' % (parent_tag, tag))
         
-        return Attribute(tag, value), start/8 + datalength  
+        return Attribute(tag, value)
     
     def __str__(self):
         return str('0x%x' % self.tag)
@@ -485,6 +501,7 @@ def decode_contentid(bits):
     xpad_flag = bits[2]
     sid_flag = bits[3]
     
+    
     # SCIdS
     scids = int(bits[4:8].to01(), 2)
     
@@ -509,12 +526,27 @@ def decode_contentid(bits):
         
     return ContentId(ecc, eid, sid, scids, xpad)   
 
+def decode_tokentable(bits):
+    
+    tokens = {}
+    
+    i = 0 
+    while i < bits.length():
+        tag = int(bits[i:i+8].to01(), 2)
+        length = int(bits[i+8:i+16].to01(), 2)
+        data = bits[i+16:i+16+(length*8)].tostring()
+        tokens[tag] = data
+        i += 16 + (length * 8)
+    return tokens
+
 """Map of possible num values and their binary equivalents.
    Note that not all the values are currently implemented, which will
    cause the decoder to skip over their details"""
 enum_values = {
     (0x02, 0x80, 0x01) : Epg.DAB,
     (0x02, 0x80, 0x02) : Epg.DRM,
+    (0x1c, 0x83, 0x01) : False,
+    (0x1c, 0x83, 0x02) : True,
     (0x1c, 0x84, 0x01) : "on-air",
     (0x1c, 0x84, 0x02) : "off-air"
 }
@@ -565,6 +597,30 @@ class CData:
         bits += stringbits
         
         return bits
+    
+    @staticmethod
+    def frombits(bits):
+                
+        # b0-b7: element tag
+        tag = int(bits[0:8].to01(), 2)
+        if tag != 0x01: raise ValueError('CData does not have the correct tag: 0x%02x != 0x01', tag)
+        
+        # b8-15: element data length (0-253 bytes)
+        # b16-31: extended element length (256-65536 bytes)
+        # b16-39: extended element length (65537-16777216 bytes)
+        datalength = int(bits[8:16].to01(), 2)
+        start = 16
+        if datalength >= 254 and datalength <= 1<<16:
+            datalength = int(bits[16:32].to01(), 2)
+            start = 32
+        elif datalength > 1<<16 and datalength <= 1<<24: 
+            datalength = int(bits[16:40].to01(), 2)
+            start = 40
+        elif datalength > 1<<24:
+            raise ValueError('element data length exceeds the maximum allowed by the extended element length (24bits): %s > %s' + datalength + " > " + (1<<24))
+        data = bits[start:start+(datalength * 8)]
+        
+        return CData(data.tostring())
 
 def marshall(obj):
     if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj)
@@ -880,6 +936,22 @@ def build_ensemble(ensemble):
 
     return ensemble_element
 
+token_table_pattern = re.compile('([\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x0b\\x0c\\x0e\\x0f\\x10\\x11\\x12\\x13])')
+def apply_token_table(val, e):
+    x = e
+    while x:
+        if hasattr(x, 'tokens'):
+            tokens = x.tokens
+            matcher = re.search(token_table_pattern, val)
+            if matcher:
+                for group in matcher.groups(): val = val.replace(group, tokens[ord(group)])
+            break
+        elif hasattr(x, 'parent'):
+            x = x.parent
+        else:
+            break
+    return val        
+
 def print_info(e):
 
     print e.attributes
@@ -897,6 +969,13 @@ def parse_time(e):
     time = Time(billed_time, billed_duration, actual_time, actual_duration)
     return time
 
+def parse_bearer(e):
+    
+    id = e.get_attributes(0x80)[0].value
+    bearer = Bearer(id)
+    return bearer
+    
+
 def parse_location(e):
     
     location = Location()
@@ -904,6 +983,25 @@ def parse_location(e):
     # times
     for c in e.get_children(0x2c):
         location.times.append(parse_time(c))
+        
+    # bearer
+    for c in e.get_children(0x2d):
+        location.bearers.append(parse_bearer(c)) 
+    
+    # apply a default content ID
+    if not len(location.bearers):
+        x = e
+        while x:
+            if hasattr(x, 'default_contentid'):
+                default_contentid = x.default_contentid
+                location.bearers.append(default_contentid)
+                break
+            elif hasattr(x, 'parent'):
+                x = x.parent
+            else:
+                break   
+    if not len(location.bearers):
+        raise ValueError('location has no bearers and no default content ID is defined')
     
     return location
 
@@ -914,15 +1012,20 @@ def parse_programme(e):
     
     # names
     for c in e.get_children(0x10):
-        programme.names.append(ShortName(c.cdata.value))
+        val = apply_token_table(c.cdata.value, e)
+        programme.names.append(ShortName(val))
     for c in e.get_children(0x11):
-        programme.names.append(MediumName(c.cdata.value))
+        val = apply_token_table(c.cdata.value, e)
+        programme.names.append(MediumName(val))
     for c in e.get_children(0x12):
-        programme.names.append(LongName(c.cdata.value))                
+        val = apply_token_table(c.cdata.value, e)
+        programme.names.append(LongName(val))                
     
     # location
     for c in e.get_children(0x19):
         programme.locations.append(parse_location(c))
+        
+
     
     return programme
  
@@ -969,8 +1072,8 @@ def unmarshall(i):
         logger.debug('object is a string of %d bytes', len(str(i)))
         b.fromstring(str(i))
         
-    e, size = Element.frombits(b)
-    logger.debug('unmarshalled element %s of length %d bytes', e, size)
+    e = Element.frombits(b)
+    logger.debug('unmarshalled element %s', e)
     if e.tag == 0x03:
         print 'SERVICE INFO', e
     elif e.tag == 0x02:

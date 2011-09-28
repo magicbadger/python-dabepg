@@ -120,8 +120,8 @@ class Crid:
     def fromstring(cls, string):
         pattern = re.compile(CRID_PATTERN)
         matcher = pattern.search(string)
-        authority = matcher.group[0]
-        data = matcher.group[1]
+        authority = matcher.group(0)
+        data = matcher.group(1)
         return Crid(authority, data)
         
     def __str__(self):
