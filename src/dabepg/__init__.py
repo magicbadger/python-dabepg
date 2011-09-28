@@ -373,6 +373,13 @@ class Programme:
             for name in [x for x in self.names if isinstance(x, type)]:
                 if len(name.text) <= max_length: return name
                 
+    def get_description(self, max_length=LongDescription.max_length):
+        """returns the first description set with a length at or below the max_length field, which 
+           defaults to the MAX_LENGTH of a LongDescription field"""
+        for type in [ShortDescription, LongDescription]:
+            for description in [x for x in self.media if isinstance(x, type)]:
+                if len(description.text) <= max_length: return description        
+                
     def get_times(self):
         """returns a list of (datetime, timedelta) tuples collated from the billed times of the locations
            of this programme"""

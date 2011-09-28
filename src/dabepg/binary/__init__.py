@@ -136,7 +136,7 @@ class Element:
             end = i + start + (child_datalength * 8)
  
             child_data = data[i + start : i + start + (child_datalength * 8)] 
-            logger.debug('child tag 0x%02x has data: %s', child_tag, bitarray_to_hex(child_data))
+            #logger.debug('child tag 0x%02x has data: %s', child_tag, bitarray_to_hex(child_data))
                 
             # attributes
             if child_tag >= 0x80 and child_tag <= 0x87:
@@ -942,9 +942,14 @@ def apply_token_table(val, e):
     while x:
         if hasattr(x, 'tokens'):
             tokens = x.tokens
-            matcher = re.search(token_table_pattern, val)
+            matcher = re.findall(token_table_pattern, val)
             if matcher:
-                for group in matcher.groups(): val = val.replace(group, tokens[ord(group)])
+                for group in matcher: 
+                    logger.debug('replacing 0x%02x with %s', ord(group), tokens[ord(group)])
+                    val = val.replace(group, tokens[ord(group)])
+            matcher = re.search(token_table_pattern, val)
+            if matcher: 
+                logger.warning('%d tokens (%s) still remain in string "%s" from table: %s', len(matcher.groups()), matcher.groups(), val, tokens)
             break
         elif hasattr(x, 'parent'):
             x = x.parent
@@ -1005,7 +1010,21 @@ def parse_location(e):
     
     return location
 
-def parse_programme(e):
+def parse_media(e):
+    
+    media = []
+    
+    # descriptions
+    for c in e.get_children(0x1a):
+        val = apply_token_table(c.cdata.value, e)
+        media.append(ShortDescription(val))
+    for c in e.get_children(0x1b):
+        val = apply_token_table(c.cdata.value, e)
+        media.append(LongDescription(val))
+        
+    return media
+
+def parse_programme(e):    
     
     shortid = e.get_attributes(0x81)[0].value
     programme = Programme(shortid)
@@ -1019,7 +1038,12 @@ def parse_programme(e):
         programme.names.append(MediumName(val))
     for c in e.get_children(0x12):
         val = apply_token_table(c.cdata.value, e)
-        programme.names.append(LongName(val))                
+        programme.names.append(LongName(val))  
+        
+    # media
+    for c in e.get_children(0x13):
+        media = parse_media(c)
+        programme.media.extend(media)              
     
     # location
     for c in e.get_children(0x19):
@@ -1029,17 +1053,21 @@ def parse_programme(e):
     
     return programme
  
-    
-
-def parse_epg(e):
+def parse_schedule(e):
     
     schedule = Schedule()
     
-    schedule_element = e.get_children(0x21)[0]
-    programme_elements = schedule_element.get_children(0x1c)
+    # programmes
+    programme_elements = e.get_children(0x1c)
     for p in programme_elements: 
         programme = parse_programme(p)
         schedule.programmes.append(programme)
+        
+    return schedule
+
+def parse_epg(e):
+    
+    schedule = parse_schedule(e.get_children(0x21)[0])
     
     return Epg(schedule, type)
     
