@@ -632,6 +632,7 @@ class CData:
         return CData(data.tostring())
 
 def marshall(obj):
+    """Marshalls an :class:Epg or :class:ServiceInfo to its binary document"""    
     if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj)
     elif isinstance(obj, Epg): return marshall_epg(obj)
     
@@ -1140,6 +1141,12 @@ def bitarray_to_binary(bits):
     return '\r\n'.join(rows)
       
 def unmarshall(i):
+    """Unmarshalls a PI or SI binary file to its respective :class:Epg or :class:ServiceInfo object
+    
+    :param i: String or File object to read binary from
+    :type i: str, file
+    """    
+    
     logger.debug('unmarshalling object of type: %s', type(i))
     
     b = bitarray()

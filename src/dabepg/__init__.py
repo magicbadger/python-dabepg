@@ -30,8 +30,19 @@ MAX_SHORTCRID = 16777215
 TRIGGER_PATTERN = '[0-9a-fA-F]{8}'
 
 class Bearer:  
-    
+    """DAB Bearer details
+
+    :param id: ContentId
+    :type id: ContentId
+    :param trigger: Trigger found in the broadcast stream that indicates when
+    a programme is being broadcast. This is the two SId and two PNum bytes
+    from the DAB FG0/16 Programme Number - this should be a complete set of
+    8 hexadecimal characters.
+    :type trigger: str
+    """
     def __init__(self, id, trigger=None):
+        """Creates the Bearer"""
+
         if isinstance(id, str): id = ContentId.fromstring(id)
         self.id = id
         self.trigger = trigger
@@ -52,6 +63,39 @@ class Bearer:
 CONTENTID_PATTERN = '([0-9a-fA-F]{2})\\.([0-9a-fA-F]{4})(\\.([0-9a-fA-F]{4,8})\\.([0-9a-fA-F]{1})){0,1}'
 
 class ContentId:
+    """DAB ensemble Content ID, of the form:
+    
+    ::
+    
+    <ECC>.<EId>.<SId>.<SCIdS>.<XPad> in hex
+    
+    Where ``ECC`` (Extended Country Code) and ``EId`` (Ensemble Identifier) are optional. The ``SId``
+    (Service ID) is either a 16-bit service identifier (for audio services) or a 32-bit service identifier
+    (for data services).
+    
+    The ``XPad`` (XPAD application type) is optional.
+    
+    For example:
+    
+    ::
+        
+        e1.ce15.c221.0.1
+        c224.0
+    
+    For DRM, this is the content of the DRM channel. It shall be a string of the form:
+    
+    ::
+        
+        <SId> in hex
+    
+    The ``SId`` (Service ID) is the 24-bit service identifier.
+    
+    For example:
+    
+    :: 
+    
+        e1c238
+    """
     
     def __init__(self, ecc, eid, sid=None, scids=None, xpad=None):
         """Values can be passed in as hex string or integers"""
@@ -84,6 +128,8 @@ class ContentId:
         
     @classmethod
     def fromstring(cls, string):
+        """Parses a ContentId from its string representation"""        
+        
         pattern = re.compile(CONTENTID_PATTERN)
         matcher = pattern.search(string)
         ecc = matcher.group(1)
@@ -111,6 +157,21 @@ class ContentId:
 CRID_PATTERN = 'crid://([^\\/]+)/([^\\/]+)'
         
 class Crid:
+    """A unique identifier for a programme, programme event or programme group in the format
+    of a Content Reference ID as defined in the TV-Anytime specification. It is in the form
+    of
+    
+    ::
+    
+        crid://<authority>/data
+        
+    :param authority: Registered Internet domain name that the CRID author has 
+    permission to use
+    :type id: str
+    :param data: free format string that is meaningful to the given authority 
+    and should uniquely identify the content within that authority
+    :type id: str    
+    """
     
     def __init__(self, authority, data):
         self.authority = authority
@@ -118,6 +179,8 @@ class Crid:
         
     @classmethod
     def fromstring(cls, string):
+        """Parses a Crid from its string representation"""    
+        
         pattern = re.compile(CRID_PATTERN)
         matcher = pattern.search(string)
         authority = matcher.group(0)
@@ -129,6 +192,11 @@ class Crid:
     
     
 class Ensemble:
+    """Used to describe and locate a DAB ensemble or DRM channel.
+    
+    :param id: Ensemble ID
+    :type id: ContentId
+    """
     
     def __init__(self, id, version=1):
         self.id = id
@@ -149,6 +217,7 @@ class Ensemble:
     
     
 class Epg:
+    """The root of an EPG schedule"""
     
     DAB="DAB"
     DRM="DRM"
@@ -158,7 +227,8 @@ class Epg:
         self.schedule = schedule if schedule is not None else Schedule()
     
 class Link:
-    
+    """This is used to link to additional information of content."""    
+        
     def __init__(self, url, mimetype=None, description=None, expiry=None, locale=locale.getlocale()):
         self.url = url
         self.mimetype = mimetype
@@ -171,6 +241,13 @@ class Link:
         
         
 class Location:
+    """Describes the time information and the location in the DAB or DRM channel of a programme.
+    There may be:
+    
+    * One time element and one bearer element
+    * One time element and multiple bearer elements
+    * One bearer element and multiple time elements
+    """
     
     def __init__(self, times=None, bearers=None):
         self.times = times if times is not None else []
@@ -184,6 +261,7 @@ class Location:
         
         
 class BaseTime:
+    """Base for Absolute and Relative times"""
     
     def get_billed_time(self, base):
         raise ValueError('not implemented')
@@ -199,6 +277,7 @@ class BaseTime:
     
     
 class RelativeTime(BaseTime):
+    """Time for a :class:ProgrammeEvent relative to the start of the containing :class:Programme"""
     
     def __init__(self, billed_offset, billed_duration, actual_offset=None, actual_duration=None):
         self.actual_offset = actual_offset
@@ -228,6 +307,7 @@ class RelativeTime(BaseTime):
 
         
 class Time(BaseTime):
+    """Absolute time for a :class:ProgrammeEvent or :class:Programme"""
     
     def __init__(self, billed_time, billed_duration, actual_time=None, actual_duration=None):
         self.actual_time = actual_time
@@ -253,8 +333,8 @@ class Time(BaseTime):
     def __repr__(self):
         return '<Time: %s>' % str(self)
 
-    
 class Text:
+    """Abstract class for textual information"""
     
     def __init__(self, text, max_length, locale=locale.getdefaultlocale()):
         if len(text) > max_length: raise ValueError('text length exceeds the maximum: %d>%d' % (len(text), max_length))
@@ -268,6 +348,7 @@ class Text:
         return '<Text[%d]: %s>' % (self.max_length, self.text)
     
 class LongDescription(Text):
+    """Long descriptive text, with maximum length of 1800 characters"""
     
     max_length = 1800
     
@@ -275,6 +356,7 @@ class LongDescription(Text):
         Text.__init__(self, text, 1800, locale)
 
 class ShortDescription(Text):
+    """Short descriptive text, with maximum length of 180 characters"""
     
     max_length = 180
     
@@ -282,6 +364,7 @@ class ShortDescription(Text):
         Text.__init__(self, text, 180, locale)
         
 class LongName(Text):
+    """Long name text, with maximum length of 128 characters"""
     
     max_length = 128
     
@@ -289,20 +372,25 @@ class LongName(Text):
         Text.__init__(self, text, 128, locale)
 
 class MediumName(Text):
-    
+    """Medium name text, with maximum length of 16 characters"""
+
     max_length = 16
     
     def __init__(self, text, locale=locale.getdefaultlocale()):
         Text.__init__(self, text, 16, locale)
         
 class ShortName(Text):
+    """Short name text, with maximum length of 8 characters"""
     
     max_length = 8
     
     def __init__(self, text, locale=locale.getdefaultlocale()):
         Text.__init__(self, text, 8, locale)    
         
-def suggest_names(names):     
+def suggest_names(names):   
+    """Returns a list of names best fitting to the lengths of the original
+    strings passed in"""
+      
     result = []
     for name in names:
         if len(name) > MediumName.max_length:
@@ -320,6 +408,16 @@ def suggest_names(names):
         
        
 class Membership:
+    """The member of a :class:Programme or :class:ProgrammeEvent to a group, references by a
+    Short Crid
+    
+    :param shortcrid: Short Crid
+    :type shortcrid: int
+    :param crid: Full Crid
+    :type crid: Crid
+    :param index: Index within the group membership
+    :type index: int    
+    """
     
     def __init__(self, shortcrid, crid=None, index=None):
         self.shortcrid = shortcrid
@@ -333,6 +431,19 @@ class Membership:
         return '<Membership: shortcrid=%d, crid=%s, index=%s>' % (self.shortcrid, self.crid, str(self.index))
     
 class Multimedia:
+    """Link to a multimedia element attached to a :class:Programme or :class:ProgrammeEvent
+    
+    :param url: URL to the multimedia resource
+    :type url: str
+    :param type: Type of Multimedia resource
+    :type type: str
+    :param mimetype: MIME type of the multimedia resource
+    :type mimetype: str    
+    :param height: height of the multimedia resource in pixels
+    :type height: int      
+    :param width: width of the multimedia resource in pixels
+    :type width: int   
+    """
     
     LOGO_UNRESTRICTED ="logo_unrestricted"    
     LOGO_MONO_SQUARE = "logo_mono_square"
@@ -349,6 +460,22 @@ class Multimedia:
         
         
 class Programme:
+    """Describes and locates a programme.
+    
+    :param shortcrid: Short Crid
+    :type shortcrid: int    
+    :param crid: Full Crid
+    :type crid: str  
+    :param bitrate: Where the programme differs from the default service bitrate, this indicates the highgest bitrate
+    that the programme can broadcast at, in kHz.
+    :type bitrate: int   
+    :param onair: True to signal this programme as being broadcast on-air
+    :type onair: bool   
+    :param onair: True to flag as a recommended programme
+    :type onair: bool  
+    :param version: Programme metadata version
+    :type version: int
+    """   
     
     def __init__(self, shortcrid, crid=None, bitrate=None, onair=True, recommendation=True, version=1):
         self.shortcrid = shortcrid
@@ -369,14 +496,14 @@ class Programme:
     def get_name(self, max_length=LongName.max_length):
         """returns the first name set with a length at or below the max_length field, which 
            defaults to the MAX_LENGTH of a LongName field"""
-        for type in [ShortName, MediumName, LongName]:
+        for type in [LongName, MediumName, ShortName]:
             for name in [x for x in self.names if isinstance(x, type)]:
                 if len(name.text) <= max_length: return name
                 
     def get_description(self, max_length=LongDescription.max_length):
         """returns the first description set with a length at or below the max_length field, which 
            defaults to the MAX_LENGTH of a LongDescription field"""
-        for type in [ShortDescription, LongDescription]:
+        for type in [LongDescription, ShortDescription]:
             for description in [x for x in self.media if isinstance(x, type)]:
                 if len(description.text) <= max_length: return description        
                 
@@ -396,6 +523,22 @@ class Programme:
     
     
 class ProgrammeEvent:
+    """Describes and locates a programme event
+    
+    :param shortcrid: Short Crid
+    :type shortcrid: int    
+    :param crid: Full Crid
+    :type crid: str  
+    :param bitrate: Where the programme event differs from the default service bitrate, this indicates the highgest bitrate
+    that the programme can broadcast at, in kHz.
+    :type bitrate: int   
+    :param onair: True to signal this programme event as being broadcast on-air
+    :type onair: bool   
+    :param onair: True to flag as a recommended programme event
+    :type onair: bool  
+    :param version: Programme event metadata version
+    :type version: int
+    """       
     
     def __init__(self, shortcrid, originator=None, crid=None, version=None, bitrate=None, onair=True, recommendation=False):
         self.shortcrid = shortcrid
@@ -421,6 +564,7 @@ class ProgrammeEvent:
     
     
 class Schedule:
+    """Contains programmes within a given time period."""
     
     def __init__(self, created=datetime.datetime.now(tzlocal()), version=1, originator=None):
         self.created = created
@@ -429,6 +573,9 @@ class Schedule:
         self.programmes = []
         
     def get_scope(self):
+        """Returns the suggested scope of the schedule, taken as an aggregate of the bearers
+        and times in the locations of each programme"""
+        
         start = None
         end = None
         services = []
@@ -453,6 +600,7 @@ class Schedule:
         
         
 class Scope:
+    """Contains the times and periods covered by this schedule"""
     
     def __init__(self, start, end, services = []):
         self.start = start
@@ -467,6 +615,13 @@ class Scope:
 
                 
 class Service:
+    """DAB Service details
+
+    :param id: Service ID
+    :type id: ContentId    
+    :param bitrate: An indication of the highest bitrate of the service.
+    :type bitrate: int   
+    """
     
     PRIMARY = "primary"
     SECONDARY = "secondary"
@@ -492,8 +647,16 @@ class Service:
         self.simulcasts = []
         self.keywords = []
         
+    def get_name(self, max_length=LongName.max_length):
+        """returns the first name set with a length at or below the max_length field, which 
+           defaults to the MAX_LENGTH of a LongName field"""
+        for type in [LongName, MediumName, ShortName]:
+            for name in [x for x in self.names if isinstance(x, type)]:
+                if len(name.text) <= max_length: return name        
+        
         
 class ServiceInfo:
+    """Top-level Service Information document object"""
     
     DAB='DAB'
     DRM='DRM'
@@ -508,6 +671,12 @@ class ServiceInfo:
         
          
 class Genre:
+    """Indicates the genre of a programme, group or service. The genre scheme is based on that used by the 
+    TV-Anytime specification.
+    
+    :param href: Genre URI
+    :type href: str  
+    """
     
     def __init__(self, href, name=None):
         self.href = href

@@ -40,6 +40,8 @@ class MarshallListener:
         pass
     
 def marshall(obj, listener=MarshallListener(), **kwargs):
+    """Marshalls an :class:Epg or :class:ServiceInfo to its XML document"""
+    
     if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj, listener, **kwargs)
     elif isinstance(obj, Epg): return marshall_epg(obj, listener, **kwargs)
     else: raise ValueError('neither a ServiceInfo nor an Epg be')
@@ -560,6 +562,11 @@ def parse_ensemble(ensembleElement):
     return ensemble
 
 def unmarshall(i):
+    """Unmarshalls a PI or SI XML file to its respective :class:Epg or :class:ServiceInfo object
+    
+    :param i: String or File object to read XML from
+    :type i: str, file
+    """
     
     # read data
     import StringIO
