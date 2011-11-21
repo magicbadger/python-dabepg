@@ -142,7 +142,7 @@ class Element:
                 
             # attributes
             if child_tag >= 0x80 and child_tag <= 0x87:
-                attribute = Attribute.frombits(tag, data[i:end])
+                attribute = Attribute.frombits(tag, data[i:i+end])
                 e.attributes.append(attribute)
             # token table
             elif child_tag == 0x04:
@@ -158,17 +158,17 @@ class Element:
                 pass               
             # children
             elif child_tag >= 0x02 and child_tag <= 0x30:
-                child = Element.frombits(data[i:end])
+                child = Element.frombits(data[i:i+end])
                 child.parent = e
                 e.children.append(child)
             # cdata
             elif child_tag == 0x01:
-                cdata = CData.frombits(data[i:end])
+                cdata = CData.frombits(data[i:i+end])
                 e.cdata = cdata
             else:
                 raise ValueError('unknown element 0x%02x under parent 0x%02x' % (child_tag, tag))
             
-            i = end
+            i += end
             
         return e
         
@@ -247,6 +247,7 @@ class Attribute:
     
     @staticmethod
     def frombits(parent, bits):
+        
         # b0-b7: attribute tag
         tag = int(bits[0:8].to01(), 2)
         
