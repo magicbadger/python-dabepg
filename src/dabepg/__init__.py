@@ -132,6 +132,7 @@ class ContentId:
         
         pattern = re.compile(CONTENTID_PATTERN)
         matcher = pattern.search(string)
+        if not matcher: raise ValueError('ContentId %s does not match the pattern: %s' % (string, CONTENTID_PATTERN))
         ecc = matcher.group(1)
         eid = matcher.group(2)
         sid = None
