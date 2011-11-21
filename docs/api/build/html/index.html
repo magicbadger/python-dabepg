@@ -1,0 +1,598 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to DAB EPG’s documentation! &mdash; DAB EPG v0.3.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DAB EPG v0.3.0 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">DAB EPG v0.3.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-dab-epg-s-documentation">
+<h1>Welcome to DAB EPG&#8217;s documentation!<a class="headerlink" href="#welcome-to-dab-epg-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents:<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="modules">
+<h1>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h1>
+</div>
+<div class="section" id="module-dabepg">
+<span id="dabepg"></span><h1>dabepg<a class="headerlink" href="#module-dabepg" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="dabepg.BaseTime">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">BaseTime</tt><a class="reference internal" href="_modules/dabepg.html#BaseTime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.BaseTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base for Absolute and Relative times</p>
+<dl class="method">
+<dt id="dabepg.BaseTime.get_actual_duration">
+<tt class="descname">get_actual_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#BaseTime.get_actual_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.BaseTime.get_actual_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.BaseTime.get_actual_time">
+<tt class="descname">get_actual_time</tt><big>(</big><em>base</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#BaseTime.get_actual_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.BaseTime.get_actual_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.BaseTime.get_billed_duration">
+<tt class="descname">get_billed_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#BaseTime.get_billed_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.BaseTime.get_billed_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.BaseTime.get_billed_time">
+<tt class="descname">get_billed_time</tt><big>(</big><em>base</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#BaseTime.get_billed_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.BaseTime.get_billed_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Bearer">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Bearer</tt><big>(</big><em>id</em>, <em>trigger=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Bearer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Bearer" title="Permalink to this definition">¶</a></dt>
+<dd><p>DAB Bearer details</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>id</strong> (<em>ContentId</em>) &#8211; ContentId</li>
+<li><strong>trigger</strong> &#8211; Trigger found in the broadcast stream that indicates when</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>a programme is being broadcast. This is the two SId and two PNum bytes
+from the DAB FG0/16 Programme Number - this should be a complete set of
+8 hexadecimal characters.
+:type trigger: str</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.ContentId">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">ContentId</tt><big>(</big><em>ecc</em>, <em>eid</em>, <em>sid=None</em>, <em>scids=None</em>, <em>xpad=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ContentId"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ContentId" title="Permalink to this definition">¶</a></dt>
+<dd><p>DAB ensemble Content ID, of the form:</p>
+<div class="highlight-python"><pre>&lt;ECC&gt;.&lt;EId&gt;.&lt;SId&gt;.&lt;SCIdS&gt;.&lt;XPad&gt; in hex</pre>
+</div>
+<p>Where <tt class="docutils literal"><span class="pre">ECC</span></tt> (Extended Country Code) and <tt class="docutils literal"><span class="pre">EId</span></tt> (Ensemble Identifier) are optional. The <tt class="docutils literal"><span class="pre">SId</span></tt>
+(Service ID) is either a 16-bit service identifier (for audio services) or a 32-bit service identifier
+(for data services).</p>
+<p>The <tt class="docutils literal"><span class="pre">XPad</span></tt> (XPAD application type) is optional.</p>
+<p>For example:</p>
+<div class="highlight-python"><pre>e1.ce15.c221.0.1
+c224.0</pre>
+</div>
+<p>For DRM, this is the content of the DRM channel. It shall be a string of the form:</p>
+<div class="highlight-python"><pre>&lt;SId&gt; in hex</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">SId</span></tt> (Service ID) is the 24-bit service identifier.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">e1c238</span>
+</pre></div>
+</div>
+<dl class="classmethod">
+<dt id="dabepg.ContentId.fromstring">
+<em class="property">classmethod </em><tt class="descname">fromstring</tt><big>(</big><em>string</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ContentId.fromstring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ContentId.fromstring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a ContentId from its string representation</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Crid">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Crid</tt><big>(</big><em>authority</em>, <em>data</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Crid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Crid" title="Permalink to this definition">¶</a></dt>
+<dd><p>A unique identifier for a programme, programme event or programme group in the format
+of a Content Reference ID as defined in the TV-Anytime specification. It is in the form
+of</p>
+<div class="highlight-python"><pre>crid://&lt;authority&gt;/data</pre>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>authority</strong> &#8211; Registered Internet domain name that the CRID author has</td>
+</tr>
+</tbody>
+</table>
+<p>permission to use
+:type id: str
+:param data: free format string that is meaningful to the given authority 
+and should uniquely identify the content within that authority
+:type id: str</p>
+<dl class="classmethod">
+<dt id="dabepg.Crid.fromstring">
+<em class="property">classmethod </em><tt class="descname">fromstring</tt><big>(</big><em>string</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Crid.fromstring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Crid.fromstring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a Crid from its string representation</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Ensemble">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Ensemble</tt><big>(</big><em>id</em>, <em>version=1</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Ensemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to describe and locate a DAB ensemble or DRM channel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<em>ContentId</em>) &#8211; Ensemble ID</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Epg">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Epg</tt><big>(</big><em>schedule</em>, <em>type='DAB'</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Epg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Epg" title="Permalink to this definition">¶</a></dt>
+<dd><p>The root of an EPG schedule</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Genre">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Genre</tt><big>(</big><em>href</em>, <em>name=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Genre"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Genre" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates the genre of a programme, group or service. The genre scheme is based on that used by the 
+TV-Anytime specification.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>href</strong> (<em>str</em>) &#8211; Genre URI</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Link">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Link</tt><big>(</big><em>url</em>, <em>mimetype=None</em>, <em>description=None</em>, <em>expiry=None</em>, <em>locale=(None</em>, <em>None)</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Link" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is used to link to additional information of content.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Location">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Location</tt><big>(</big><em>times=None</em>, <em>bearers=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Location"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Location" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes the time information and the location in the DAB or DRM channel of a programme.
+There may be:</p>
+<ul class="simple">
+<li>One time element and one bearer element</li>
+<li>One time element and multiple bearer elements</li>
+<li>One bearer element and multiple time elements</li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.LongDescription">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">LongDescription</tt><big>(</big><em>text</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#LongDescription"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.LongDescription" title="Permalink to this definition">¶</a></dt>
+<dd><p>Long descriptive text, with maximum length of 1800 characters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.LongName">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">LongName</tt><big>(</big><em>text</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#LongName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.LongName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Long name text, with maximum length of 128 characters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.MediumName">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">MediumName</tt><big>(</big><em>text</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#MediumName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.MediumName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Medium name text, with maximum length of 16 characters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Membership">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Membership</tt><big>(</big><em>shortcrid</em>, <em>crid=None</em>, <em>index=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Membership"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Membership" title="Permalink to this definition">¶</a></dt>
+<dd><p>The member of a :class:Programme or :class:ProgrammeEvent to a group, references by a
+Short Crid</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>shortcrid</strong> (<em>int</em>) &#8211; Short Crid</li>
+<li><strong>crid</strong> (<em>Crid</em>) &#8211; Full Crid</li>
+<li><strong>index</strong> (<em>int</em>) &#8211; Index within the group membership</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Multimedia">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Multimedia</tt><big>(</big><em>url</em>, <em>type='logo_unrestricted'</em>, <em>mimetype=None</em>, <em>height=None</em>, <em>width=None</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Multimedia"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Multimedia" title="Permalink to this definition">¶</a></dt>
+<dd><p>Link to a multimedia element attached to a :class:Programme or :class:ProgrammeEvent</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>url</strong> (<em>str</em>) &#8211; URL to the multimedia resource</li>
+<li><strong>type</strong> (<em>str</em>) &#8211; Type of Multimedia resource</li>
+<li><strong>mimetype</strong> (<em>str</em>) &#8211; MIME type of the multimedia resource</li>
+<li><strong>height</strong> (<em>int</em>) &#8211; height of the multimedia resource in pixels</li>
+<li><strong>width</strong> (<em>int</em>) &#8211; width of the multimedia resource in pixels</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Programme">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Programme</tt><big>(</big><em>shortcrid</em>, <em>crid=None</em>, <em>bitrate=None</em>, <em>onair=True</em>, <em>recommendation=True</em>, <em>version=1</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Programme"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Programme" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes and locates a programme.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>shortcrid</strong> (<em>int</em>) &#8211; Short Crid</li>
+<li><strong>crid</strong> (<em>str</em>) &#8211; Full Crid</li>
+<li><strong>bitrate</strong> &#8211; Where the programme differs from the default service bitrate, this indicates the highgest bitrate</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>that the programme can broadcast at, in kHz.
+:type bitrate: int   
+:param onair: True to signal this programme as being broadcast on-air
+:type onair: bool   
+:param onair: True to flag as a recommended programme
+:type onair: bool  
+:param version: Programme metadata version
+:type version: int</p>
+<dl class="method">
+<dt id="dabepg.Programme.get_description">
+<tt class="descname">get_description</tt><big>(</big><em>max_length=1800</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Programme.get_description"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Programme.get_description" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the first description set with a length at or below the max_length field, which 
+defaults to the MAX_LENGTH of a LongDescription field</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dabepg.Programme.get_name">
+<tt class="descname">get_name</tt><big>(</big><em>max_length=128</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Programme.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Programme.get_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the first name set with a length at or below the max_length field, which 
+defaults to the MAX_LENGTH of a LongName field</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dabepg.Programme.get_times">
+<tt class="descname">get_times</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#Programme.get_times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Programme.get_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a list of (datetime, timedelta) tuples collated from the billed times of the locations
+of this programme</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.ProgrammeEvent">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">ProgrammeEvent</tt><big>(</big><em>shortcrid</em>, <em>originator=None</em>, <em>crid=None</em>, <em>version=None</em>, <em>bitrate=None</em>, <em>onair=True</em>, <em>recommendation=False</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ProgrammeEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ProgrammeEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes and locates a programme event</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>shortcrid</strong> (<em>int</em>) &#8211; Short Crid</li>
+<li><strong>crid</strong> (<em>str</em>) &#8211; Full Crid</li>
+<li><strong>bitrate</strong> &#8211; Where the programme event differs from the default service bitrate, this indicates the highgest bitrate</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>that the programme can broadcast at, in kHz.
+:type bitrate: int   
+:param onair: True to signal this programme event as being broadcast on-air
+:type onair: bool   
+:param onair: True to flag as a recommended programme event
+:type onair: bool  
+:param version: Programme event metadata version
+:type version: int</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.RelativeTime">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">RelativeTime</tt><big>(</big><em>billed_offset</em>, <em>billed_duration</em>, <em>actual_offset=None</em>, <em>actual_duration=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#RelativeTime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.RelativeTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Time for a :class:ProgrammeEvent relative to the start of the containing :class:Programme</p>
+<dl class="method">
+<dt id="dabepg.RelativeTime.get_actual_duration">
+<tt class="descname">get_actual_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#RelativeTime.get_actual_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.RelativeTime.get_actual_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.RelativeTime.get_actual_time">
+<tt class="descname">get_actual_time</tt><big>(</big><em>base</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#RelativeTime.get_actual_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.RelativeTime.get_actual_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.RelativeTime.get_billed_duration">
+<tt class="descname">get_billed_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#RelativeTime.get_billed_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.RelativeTime.get_billed_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.RelativeTime.get_billed_time">
+<tt class="descname">get_billed_time</tt><big>(</big><em>base</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#RelativeTime.get_billed_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.RelativeTime.get_billed_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Schedule">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Schedule</tt><big>(</big><em>created=datetime.datetime(2011</em>, <em>9</em>, <em>30</em>, <em>16</em>, <em>22</em>, <em>26</em>, <em>27000</em>, <em>tzinfo=tzlocal())</em>, <em>version=1</em>, <em>originator=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Schedule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Schedule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains programmes within a given time period.</p>
+<dl class="method">
+<dt id="dabepg.Schedule.get_scope">
+<tt class="descname">get_scope</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#Schedule.get_scope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Schedule.get_scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the suggested scope of the schedule, taken as an aggregate of the bearers
+and times in the locations of each programme</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Scope">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Scope</tt><big>(</big><em>start</em>, <em>end</em>, <em>services=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="reference internal" href="_modules/dabepg.html#Scope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains the times and periods covered by this schedule</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Service">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Service</tt><big>(</big><em>id</em>, <em>bitrate=None</em>, <em>type='primary'</em>, <em>format='audio'</em>, <em>version=1</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Service"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Service" title="Permalink to this definition">¶</a></dt>
+<dd><p>DAB Service details</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>id</strong> (<em>ContentId</em>) &#8211; Service ID</li>
+<li><strong>bitrate</strong> (<em>int</em>) &#8211; An indication of the highest bitrate of the service.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dabepg.Service.get_name">
+<tt class="descname">get_name</tt><big>(</big><em>max_length=128</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Service.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Service.get_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the first name set with a length at or below the max_length field, which 
+defaults to the MAX_LENGTH of a LongName field</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.ServiceInfo">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">ServiceInfo</tt><big>(</big><em>created=datetime.datetime(2011</em>, <em>9</em>, <em>30</em>, <em>16</em>, <em>22</em>, <em>26</em>, <em>27000</em>, <em>tzinfo=tzlocal())</em>, <em>version=1</em>, <em>originator=None</em>, <em>provider=None</em>, <em>type='DAB'</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ServiceInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ServiceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Top-level Service Information document object</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.ShortDescription">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">ShortDescription</tt><big>(</big><em>text</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ShortDescription"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ShortDescription" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short descriptive text, with maximum length of 180 characters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.ShortName">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">ShortName</tt><big>(</big><em>text</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#ShortName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.ShortName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short name text, with maximum length of 8 characters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Text">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Text</tt><big>(</big><em>text</em>, <em>max_length</em>, <em>locale=('en_GB'</em>, <em>'cp1252')</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract class for textual information</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dabepg.Time">
+<em class="property">class </em><tt class="descclassname">dabepg.</tt><tt class="descname">Time</tt><big>(</big><em>billed_time</em>, <em>billed_duration</em>, <em>actual_time=None</em>, <em>actual_duration=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Absolute time for a :class:ProgrammeEvent or :class:Programme</p>
+<dl class="method">
+<dt id="dabepg.Time.get_actual_duration">
+<tt class="descname">get_actual_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#Time.get_actual_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Time.get_actual_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.Time.get_actual_time">
+<tt class="descname">get_actual_time</tt><big>(</big><em>base=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Time.get_actual_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Time.get_actual_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.Time.get_billed_duration">
+<tt class="descname">get_billed_duration</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/dabepg.html#Time.get_billed_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Time.get_billed_duration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dabepg.Time.get_billed_time">
+<tt class="descname">get_billed_time</tt><big>(</big><em>base=None</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#Time.get_billed_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.Time.get_billed_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dabepg.suggest_names">
+<tt class="descclassname">dabepg.</tt><tt class="descname">suggest_names</tt><big>(</big><em>names</em><big>)</big><a class="reference internal" href="_modules/dabepg.html#suggest_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.suggest_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of names best fitting to the lengths of the original
+strings passed in</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dabepg.xml">
+<span id="dabepg-xml"></span><h1>dabepg.xml<a class="headerlink" href="#module-dabepg.xml" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="dabepg.xml.marshall">
+<tt class="descclassname">dabepg.xml.</tt><tt class="descname">marshall</tt><big>(</big><em>obj</em>, <em>listener=&lt;dabepg.xml.MarshallListener instance at 0x026F0D78&gt;</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/dabepg/xml.html#marshall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.xml.marshall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marshalls an :class:Epg or :class:ServiceInfo to its XML document</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dabepg.xml.unmarshall">
+<tt class="descclassname">dabepg.xml.</tt><tt class="descname">unmarshall</tt><big>(</big><em>i</em><big>)</big><a class="reference internal" href="_modules/dabepg/xml.html#unmarshall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.xml.unmarshall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unmarshalls a PI or SI XML file to its respective :class:Epg or :class:ServiceInfo object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<em>str, file</em>) &#8211; String or File object to read XML from</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dabepg.binary">
+<span id="dabepg-binary"></span><h1>dabepg.binary<a class="headerlink" href="#module-dabepg.binary" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="dabepg.binary.marshall">
+<tt class="descclassname">dabepg.binary.</tt><tt class="descname">marshall</tt><big>(</big><em>obj</em><big>)</big><a class="reference internal" href="_modules/dabepg/binary.html#marshall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.binary.marshall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Marshalls an :class:Epg or :class:ServiceInfo to its binary document</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dabepg.binary.unmarshall">
+<tt class="descclassname">dabepg.binary.</tt><tt class="descname">unmarshall</tt><big>(</big><em>i</em><big>)</big><a class="reference internal" href="_modules/dabepg/binary.html#unmarshall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dabepg.binary.unmarshall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unmarshalls a PI or SI binary file to its respective :class:Epg or :class:ServiceInfo object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>i</strong> (<em>str, file</em>) &#8211; String or File object to read binary from</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to DAB EPG&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#contents">Contents:</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#module-dabepg">dabepg</a></li>
+<li><a class="reference internal" href="#module-dabepg.xml">dabepg.xml</a></li>
+<li><a class="reference internal" href="#module-dabepg.binary">dabepg.binary</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">DAB EPG v0.3.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Ben Poor.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

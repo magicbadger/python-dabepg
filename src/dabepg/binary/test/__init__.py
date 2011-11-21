@@ -57,8 +57,9 @@ class TimepointTypeTest(unittest.TestCase):
         from dabepg.binary import decode_timepoint
         from bitarray import bitarray
         
-        hex = '36 1B DB 1E 2C 00 20'
-        bits = hex_to_bitarray('36 1B DB 1E 2C 00 02')
+        #hex = '36 1B DB 1E 2C 00 20'
+        hex = '36 81 1A 31 B4 00 02'
+        bits = hex_to_bitarray(hex)
         timepoint = decode_timepoint(bits)
         print 'timepoint', hex, 'decodes as'
         print timepoint
