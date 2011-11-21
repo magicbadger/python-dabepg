@@ -3,6 +3,8 @@ import unittest
 from dabepg import *
 from dabepg.binary import *
 import datetime
+from dateutil.tz import tzutc, tzoffset
+import pytz
 
 class CDataTypeTest(unittest.TestCase):
 
@@ -41,25 +43,52 @@ class ScopeElementTest(unittest.TestCase):
         
 class TimepointTypeTest(unittest.TestCase):
     
-    def test_encode_utc(self):
+    def test_encode_shortform_utc(self):
         from dabepg.binary import encode_timepoint
         from datetime import datetime
-        import pytz
         
-        now = datetime(2010, 7, 30, 0, 0, 0, 0)
-        now = pytz.timezone('Europe/London').fromutc(now)
-        now = now.astimezone(pytz.timezone('Europe/London'))
+        now = datetime(2010, 7, 30, 12, 0, 0, 0, tzinfo=tzutc())
         bits = encode_timepoint(now)
         print 'timepoint', now, 'encodes as'
         print bitarray_to_binary(bits)
         print bitarray_to_hex(bits)
         
-    def test_encode_lto(self):
+    def test_decode_shortform_utc(self):
+        from dabepg.binary import decode_timepoint
+        from bitarray import bitarray
+        
+        hex = '36 1B DB 1E 2C 00 20'
+        bits = hex_to_bitarray('36 1B DB 1E 2C 00 02')
+        timepoint = decode_timepoint(bits)
+        print 'timepoint', hex, 'decodes as'
+        print timepoint
+        
+    def test_encode_shortform_lto(self):
         from dabepg.binary import encode_timepoint
         from datetime import datetime
-        import pytz
         
-        now = datetime(2010, 7, 30, 0, 0, 0, 0, pytz.timezone('Europe/London'))
+        now = datetime(2010, 7, 30, 12, 0, 0, 0, tzinfo=tzoffset(None, 3600))
+       
+        bits = encode_timepoint(now)
+        print 'timeepoint', now, 'encodes as'
+        print bitarray_to_binary(bits)
+        print bitarray_to_hex(bits)
+        
+    def test_encode_longform_utc(self):
+        from dabepg.binary import encode_timepoint
+        from datetime import datetime
+        
+        now = datetime(2010, 7, 30, 12, 30, 11, 0, tzinfo=tzutc())
+        bits = encode_timepoint(now)
+        print 'timepoint', now, 'encodes as'
+        print bitarray_to_binary(bits)
+        print bitarray_to_hex(bits)        
+        
+    def test_encode_longform_lto(self):
+        from dabepg.binary import encode_timepoint
+        from datetime import datetime
+        
+        now = datetime(2010, 7, 30, 12, 30, 11, 0, tzinfo=tzoffset(None, 3600))
        
         bits = encode_timepoint(now)
         print 'timeepoint', now, 'encodes as'

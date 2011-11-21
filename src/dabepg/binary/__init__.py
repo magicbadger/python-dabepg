@@ -23,7 +23,7 @@
 from dabepg import *
 from bitarray import bitarray, bits2bytes
 import math
-import datetime, pytz
+import datetime, dateutil.tz
 import logging
 
 logger = logging.getLogger("dabepg.binary")
@@ -133,10 +133,12 @@ class Element:
             elif child_datalength == 0xff: 
                 child_datalength = int(bits[i+16:i+40].to01(), 2)
                 start = 40
-            end = i + start + (child_datalength * 8)
+            end = start + (child_datalength * 8)
+            if i + end > data.length():
+                raise ValueError('end of data is beyond length: %d > %d' % ((i + end)/8, data.length() / 8))
  
-            child_data = data[i + start : i + start + (child_datalength * 8)] 
-            #logger.debug('child tag 0x%02x has data: %s', child_tag, bitarray_to_hex(child_data))
+            child_data = data[i + start : i + end] 
+            if child_data.length() < 16*8: logger.debug('child tag 0x%02x for parent 0x%02x has data: %s', child_tag, tag, bitarray_to_hex(child_data))
                 
             # attributes
             if child_tag >= 0x80 and child_tag <= 0x87:
@@ -190,8 +192,8 @@ class Attribute:
         data = None
         if isinstance(self.value, int) or isinstance(self.value, long): # integer
             if self.bitlength is None: raise ValueError('attribute with int value has no bitlength specification: %s' % self)
-            logger.debug('encoding attribute %s as int with %d bits', self, self.bits)
-            data = int_to_bitarray(self.value, self.bits)
+            logger.debug('encoding attribute %s as int with %d bits', self, self.bitlength)
+            data = int_to_bitarray(self.value, self.bitlength)
         elif isinstance(self.value, datetime.timedelta): # duration
             data = int_to_bitarray(self.value.seconds, 16)
             logger.debug('encoding attribute %s as duration', self)
@@ -380,7 +382,7 @@ def encode_timepoint(timepoint):
     bits += bitarray('0')
         
     # b19: LTO Flag
-    if timepoint.tzinfo is None or timepoint.tzinfo is pytz.timezone('UTC'):
+    if timepoint.tzinfo is None or (timepoint.utcoffset().days == 0 and timepoint.utcoffset().seconds == 0):
         bits += bitarray('0')
     else:
         bits += bitarray('1')
@@ -399,11 +401,11 @@ def encode_timepoint(timepoint):
         bits += int_to_bitarray(timepoint.minute, 6)
         
     # b32/48: LTO
-    if timepoint.tzinfo is not None and timepoint.tzinfo is not pytz.timezone('UTC'):
-            bits += bitarray('00') # b49-50: RFA(0)
-            offset = (timepoint.utcoffset().days * 86400 + timepoint.utcoffset().seconds) + (timepoint.dst().days * 86400 + timepoint.dst().days)
-            bits += bitarray('0' if offset > 0 else '1') # b51: LTO sign
-            bits += int_to_bitarray(offset / (60 * 60) * 2, 5) # b52-56: Half hours
+    if bits[19]:
+        bits += bitarray('00') # b49-50: RFA(0)
+        offset = (timepoint.utcoffset().days * 86400 + timepoint.utcoffset().seconds) + (timepoint.dst().days * 86400 + timepoint.dst().days)
+        bits += bitarray('0' if offset > 0 else '1') # b51: LTO sign
+        bits += int_to_bitarray(offset / (60 * 60) * 2, 5) # b52-56: Half hours
             
     return bits
 
@@ -415,14 +417,26 @@ def decode_timepoint(bits):
     date = datetime.datetime.fromtimestamp((mjd - 40587) * 86400)
     timepoint = datetime.datetime.combine(date, datetime.time())
 
+    # parse timezone
+    if bits[19]:
+        sign = bits[-6]
+        half_hours = int(bits[-5:].to01(), 2)
+        timezone = dateutil.tz.tzoffset(None, half_hours * 30 * 60 * (-1 if sign else 1))
+    else:
+        timezone = dateutil.tz.tzutc()
+
+    # parse date with UTC short form or long form
     if bits[20]:
         timepoint = timepoint.replace(hour=int(bits[21:26].to01(), 2),
                                       minute=int(bits[26:32].to01(), 2),
                                       second=int(bits[32:38].to01(), 2),
-                                      microsecond=int(bits[38:48].to01(), 2) * 1000)
+                                      microsecond=int(bits[38:48].to01(), 2) * 1000,
+                                      tzinfo=timezone)
     else:
         timepoint = timepoint.replace(hour=int(bits[21:26].to01(), 2), 
-                                      minute=int(bits[26:32].to01(), 2))
+                                      minute=int(bits[26:32].to01(), 2),
+                                      tzinfo=timezone)
+        
     return timepoint
 
 def encode_contentid(id):
@@ -968,13 +982,11 @@ def apply_token_table(val, e):
     return val        
 
 def print_info(e):
-
     print e.attributes
     print e.children
     print e.cdata
 
 def parse_time(e):
-    
     billed_time = e.get_attributes(0x80)[0].value
     billed_duration = e.get_attributes(0x81)[0].value
     actual_time = None
@@ -985,7 +997,6 @@ def parse_time(e):
     return time
 
 def parse_bearer(e):
-    
     id = e.get_attributes(0x80)[0].value
     bearer = Bearer(id)
     return bearer
@@ -1130,6 +1141,12 @@ def bitarray_to_hex(bits):
     for i in range(0, len(bits), 256):
         rows.append(' '.join(["%02X" % ord(x) for x in bits[i:i+256].tostring()]).strip())
     return '\r\n'.join(rows)
+
+def hex_to_bitarray(hex):
+    b = bitarray()
+    for byte in hex.split(' '):
+        b.extend(int_to_bitarray(int('0x%s' % byte, 16), 8))
+    return b
 
 def bitarray_to_binary(bits):
     rows = []
