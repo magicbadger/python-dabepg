@@ -22,7 +22,6 @@
 
 from dabepg import *
 import xml.dom.minidom
-from elementtree.ElementTree import parse
 import isodate
 from xml.dom import XML_NAMESPACE
 
@@ -571,7 +570,7 @@ def unmarshall(i):
     # read data
     import StringIO
     d = i if isinstance(i, file) else StringIO.StringIO(i)
-    
+    from xml.etree.ElementTree import parse 
     doc = parse(d)
     root = doc.getroot()
     
