@@ -1,0 +1,630 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dabepg &mdash; DAB EPG v0.3.0 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.3.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="DAB EPG v0.3.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">DAB EPG v0.3.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dabepg</h1><div class="highlight"><pre>
+<span class="c">#===============================================================================</span>
+<span class="c"># Python DAB EPG API - Serialize/Deserialize To/From objects to XML/Binary as per</span>
+<span class="c"># ETSI specifications TS 102 818 (XML Specification for DAB EPG) and TS 102 </span>
+<span class="c"># 371 (Transportation and Binary Encoding Specification for EPG).</span>
+<span class="c"># </span>
+<span class="c"># Copyright (C) 2010 Global Radio</span>
+<span class="c"># </span>
+<span class="c"># This library is free software; you can redistribute it and/or</span>
+<span class="c"># modify it under the terms of the GNU Lesser General Public</span>
+<span class="c"># License as published by the Free Software Foundation; either</span>
+<span class="c"># version 2.1 of the License, or (at your option) any later version.</span>
+<span class="c"># </span>
+<span class="c"># This library is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU</span>
+<span class="c"># Lesser General Public License for more details.</span>
+<span class="c"># </span>
+<span class="c"># You should have received a copy of the GNU Lesser General Public</span>
+<span class="c"># License along with this library; if not, write to the Free Software</span>
+<span class="c"># Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA</span>
+<span class="c">#===============================================================================</span>
+
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">locale</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">dateutil.tz</span> <span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="n">MAX_SHORTCRID</span> <span class="o">=</span> <span class="mi">16777215</span>
+<span class="n">TRIGGER_PATTERN</span> <span class="o">=</span> <span class="s">&#39;[0-9a-fA-F]{8}&#39;</span>
+
+<div class="viewcode-block" id="Bearer"><a class="viewcode-back" href="../index.html#dabepg.Bearer">[docs]</a><span class="k">class</span> <span class="nc">Bearer</span><span class="p">:</span>  
+    <span class="sd">&quot;&quot;&quot;DAB Bearer details</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">trigger</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the Bearer</span>
+
+<span class="sd">        :param id: ContentId</span>
+<span class="sd">        :type id: ContentId</span>
+<span class="sd">        :param trigger: Trigger found in the broadcast stream that indicates when</span>
+<span class="sd">        a programme is being broadcast. This is the two SId and two PNum bytes</span>
+<span class="sd">        from the DAB FG0/16 Programme Number - this should be a complete set of</span>
+<span class="sd">        8 hexadecimal characters.</span>
+<span class="sd">        :type trigger: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="nb">id</span> <span class="o">=</span> <span class="n">ContentId</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trigger</span> <span class="o">=</span> <span class="n">trigger</span>
+        <span class="k">if</span> <span class="n">trigger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">TRIGGER_PATTERN</span><span class="p">,</span> <span class="n">trigger</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;trigger does not match the following pattern &#39;</span> <span class="o">+</span> <span class="n">TRIGGER_PATTERN</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Bearer</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">trigger</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">trigger</span>            
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Bearer: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+</div>
+<span class="n">CONTENTID_PATTERN</span> <span class="o">=</span> <span class="s">&#39;([0-9a-fA-F]{2})</span><span class="se">\\</span><span class="s">.([0-9a-fA-F]{4})(</span><span class="se">\\</span><span class="s">.([0-9a-fA-F]{4,8})</span><span class="se">\\</span><span class="s">.([0-9a-fA-F]{1})){0,1}&#39;</span>
+
+<div class="viewcode-block" id="ContentId"><a class="viewcode-back" href="../index.html#dabepg.ContentId">[docs]</a><span class="k">class</span> <span class="nc">ContentId</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ecc</span><span class="p">,</span> <span class="n">eid</span><span class="p">,</span> <span class="n">sid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">scids</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">xpad</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Values can be passed in as hex string or integers&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sid</span> <span class="o">=</span> <span class="n">sid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scids</span> <span class="o">=</span> <span class="n">scids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xpad</span> <span class="o">=</span> <span class="n">xpad</span>
+        
+        <span class="c"># ECC    </span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ecc</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecc</span> <span class="o">=</span> <span class="n">ecc</span>
+        <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ecc</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        
+        <span class="c"># EId</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">eid</span> <span class="o">=</span> <span class="n">eid</span>
+        <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+            
+        <span class="c"># SId</span>
+        <span class="k">if</span> <span class="n">sid</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span> <span class="o">=</span> <span class="n">sid</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+                  
+        <span class="c"># SCIdS</span>
+        <span class="k">if</span> <span class="n">scids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scids</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">scids</span> <span class="o">=</span> <span class="n">scids</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scids</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">scids</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>                      
+
+        <span class="c"># XPAD</span>
+        <span class="k">if</span> <span class="n">xpad</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xpad</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">xpad</span> <span class="o">=</span> <span class="n">xpad</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">xpad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xpad</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>  
+        
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ContentId.fromstring"><a class="viewcode-back" href="../index.html#dabepg.ContentId.fromstring">[docs]</a>    <span class="k">def</span> <span class="nf">fromstring</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">CONTENTID_PATTERN</span><span class="p">)</span>
+        <span class="n">matcher</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="n">ecc</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">eid</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">sid</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">scids</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matcher</span><span class="o">.</span><span class="n">groups</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">sid</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">scids</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ContentId</span><span class="p">(</span><span class="n">ecc</span><span class="p">,</span> <span class="n">eid</span><span class="p">,</span> <span class="n">sid</span><span class="p">,</span> <span class="n">scids</span><span class="p">)</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%x</span><span class="s">.</span><span class="si">%x</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ecc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">scids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="nb">id</span> <span class="o">+=</span> <span class="s">&#39;.</span><span class="si">%x</span><span class="s">.</span><span class="si">%x</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">id</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;ContentId: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+            
+        </div>
+<span class="n">CRID_PATTERN</span> <span class="o">=</span> <span class="s">&#39;crid://([^</span><span class="se">\\</span><span class="s">/]+)/([^</span><span class="se">\\</span><span class="s">/]+)&#39;</span>
+        
+<div class="viewcode-block" id="Crid"><a class="viewcode-back" href="../index.html#dabepg.Crid">[docs]</a><span class="k">class</span> <span class="nc">Crid</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">authority</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span> <span class="o">=</span> <span class="n">authority</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Crid.fromstring"><a class="viewcode-back" href="../index.html#dabepg.Crid.fromstring">[docs]</a>    <span class="k">def</span> <span class="nf">fromstring</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">CRID_PATTERN</span><span class="p">)</span>
+        <span class="n">matcher</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="n">authority</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">matcher</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Crid</span><span class="p">(</span><span class="n">authority</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        </div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;crid://</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    
+    </div>
+<div class="viewcode-block" id="Ensemble"><a class="viewcode-back" href="../index.html#dabepg.Ensemble">[docs]</a><span class="k">class</span> <span class="nc">Ensemble</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">media</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">services</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ca</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Ensemble: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    
+    </div>
+<div class="viewcode-block" id="Epg"><a class="viewcode-back" href="../index.html#dabepg.Epg">[docs]</a><span class="k">class</span> <span class="nc">Epg</span><span class="p">:</span>
+    
+    <span class="n">DAB</span><span class="o">=</span><span class="s">&quot;DAB&quot;</span>
+    <span class="n">DRM</span><span class="o">=</span><span class="s">&quot;DRM&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schedule</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">DAB</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span> <span class="k">if</span> <span class="n">schedule</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">Schedule</span><span class="p">()</span>
+    </div>
+<div class="viewcode-block" id="Link"><a class="viewcode-back" href="../index.html#dabepg.Link">[docs]</a><span class="k">class</span> <span class="nc">Link</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">expiry</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getlocale</span><span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mimetype</span> <span class="o">=</span> <span class="n">mimetype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expiry</span> <span class="o">=</span> <span class="n">expiry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locale</span> <span class="o">=</span> <span class="n">locale</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+        
+        </div>
+<div class="viewcode-block" id="Location"><a class="viewcode-back" href="../index.html#dabepg.Location">[docs]</a><span class="k">class</span> <span class="nc">Location</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bearers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="n">times</span> <span class="k">if</span> <span class="n">times</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bearers</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">bearers</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ContentId</span><span class="p">)</span> <span class="k">else</span> <span class="n">ContentId</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="n">bearers</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">bearers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bearers</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Location: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        </div>
+<div class="viewcode-block" id="BaseTime"><a class="viewcode-back" href="../index.html#dabepg.BaseTime">[docs]</a><span class="k">class</span> <span class="nc">BaseTime</span><span class="p">:</span>
+    
+<div class="viewcode-block" id="BaseTime.get_billed_time"><a class="viewcode-back" href="../index.html#dabepg.BaseTime.get_billed_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;not implemented&#39;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="BaseTime.get_billed_duration"><a class="viewcode-back" href="../index.html#dabepg.BaseTime.get_billed_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;not implemented&#39;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="BaseTime.get_actual_time"><a class="viewcode-back" href="../index.html#dabepg.BaseTime.get_actual_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;not implemented&#39;</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="BaseTime.get_actual_duration"><a class="viewcode-back" href="../index.html#dabepg.BaseTime.get_actual_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;not implemented&#39;</span><span class="p">)</span>
+    
+    </div></div>
+<div class="viewcode-block" id="RelativeTime"><a class="viewcode-back" href="../index.html#dabepg.RelativeTime">[docs]</a><span class="k">class</span> <span class="nc">RelativeTime</span><span class="p">(</span><span class="n">BaseTime</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">billed_offset</span><span class="p">,</span> <span class="n">billed_duration</span><span class="p">,</span> <span class="n">actual_offset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">actual_duration</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actual_offset</span> <span class="o">=</span> <span class="n">actual_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actual_duration</span> <span class="o">=</span> <span class="n">actual_duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">billed_offset</span> <span class="o">=</span> <span class="n">billed_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span> <span class="o">=</span> <span class="n">billed_duration</span>
+    
+<div class="viewcode-block" id="RelativeTime.get_billed_time"><a class="viewcode-back" href="../index.html#dabepg.RelativeTime.get_billed_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">billed_offset</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">base</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">billed_offset</span>
+        </div>
+<div class="viewcode-block" id="RelativeTime.get_billed_duration"><a class="viewcode-back" href="../index.html#dabepg.RelativeTime.get_billed_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span>
+        </div>
+<div class="viewcode-block" id="RelativeTime.get_actual_time"><a class="viewcode-back" href="../index.html#dabepg.RelativeTime.get_actual_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">actual_offset</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">base</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">actual_offset</span>
+        </div>
+<div class="viewcode-block" id="RelativeTime.get_actual_duration"><a class="viewcode-back" href="../index.html#dabepg.RelativeTime.get_actual_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">actual_duration</span>
+    </div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;offset=</span><span class="si">%s</span><span class="s">, duration=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">billed_offset</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;RelativeTime: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        </div>
+<div class="viewcode-block" id="Time"><a class="viewcode-back" href="../index.html#dabepg.Time">[docs]</a><span class="k">class</span> <span class="nc">Time</span><span class="p">(</span><span class="n">BaseTime</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">billed_time</span><span class="p">,</span> <span class="n">billed_duration</span><span class="p">,</span> <span class="n">actual_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">actual_duration</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actual_time</span> <span class="o">=</span> <span class="n">actual_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actual_duration</span> <span class="o">=</span> <span class="n">actual_duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">billed_time</span> <span class="o">=</span> <span class="n">billed_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span> <span class="o">=</span> <span class="n">billed_duration</span>
+    
+<div class="viewcode-block" id="Time.get_billed_time"><a class="viewcode-back" href="../index.html#dabepg.Time.get_billed_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">billed_time</span>
+        </div>
+<div class="viewcode-block" id="Time.get_billed_duration"><a class="viewcode-back" href="../index.html#dabepg.Time.get_billed_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_billed_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span>
+        </div>
+<div class="viewcode-block" id="Time.get_actual_time"><a class="viewcode-back" href="../index.html#dabepg.Time.get_actual_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">actual_time</span>
+        </div>
+<div class="viewcode-block" id="Time.get_actual_duration"><a class="viewcode-back" href="../index.html#dabepg.Time.get_actual_duration">[docs]</a>    <span class="k">def</span> <span class="nf">get_actual_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">actual_duration</span>
+</div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;time=</span><span class="si">%s</span><span class="s">, duration=</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">billed_time</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">billed_duration</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Time: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    </div>
+<div class="viewcode-block" id="Text"><a class="viewcode-back" href="../index.html#dabepg.Text">[docs]</a><span class="k">class</span> <span class="nc">Text</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_length</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;text length exceeds the maximum: </span><span class="si">%d</span><span class="s">&gt;</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span> <span class="n">max_length</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="n">max_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Text[</span><span class="si">%d</span><span class="s">]: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="LongDescription"><a class="viewcode-back" href="../index.html#dabepg.LongDescription">[docs]</a><span class="k">class</span> <span class="nc">LongDescription</span><span class="p">(</span><span class="n">Text</span><span class="p">):</span>
+    
+    <span class="n">max_length</span> <span class="o">=</span> <span class="mi">1800</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="mi">1800</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ShortDescription"><a class="viewcode-back" href="../index.html#dabepg.ShortDescription">[docs]</a><span class="k">class</span> <span class="nc">ShortDescription</span><span class="p">(</span><span class="n">Text</span><span class="p">):</span>
+    
+    <span class="n">max_length</span> <span class="o">=</span> <span class="mi">180</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="LongName"><a class="viewcode-back" href="../index.html#dabepg.LongName">[docs]</a><span class="k">class</span> <span class="nc">LongName</span><span class="p">(</span><span class="n">Text</span><span class="p">):</span>
+    
+    <span class="n">max_length</span> <span class="o">=</span> <span class="mi">128</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="MediumName"><a class="viewcode-back" href="../index.html#dabepg.MediumName">[docs]</a><span class="k">class</span> <span class="nc">MediumName</span><span class="p">(</span><span class="n">Text</span><span class="p">):</span>
+    
+    <span class="n">max_length</span> <span class="o">=</span> <span class="mi">16</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="ShortName"><a class="viewcode-back" href="../index.html#dabepg.ShortName">[docs]</a><span class="k">class</span> <span class="nc">ShortName</span><span class="p">(</span><span class="n">Text</span><span class="p">):</span>
+    
+    <span class="n">max_length</span> <span class="o">=</span> <span class="mi">8</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="n">locale</span><span class="p">)</span>    
+        </div>
+<div class="viewcode-block" id="suggest_names"><a class="viewcode-back" href="../index.html#dabepg.suggest_names">[docs]</a><span class="k">def</span> <span class="nf">suggest_names</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>     
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MediumName</span><span class="o">.</span><span class="n">max_length</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MediumName</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">MediumName</span><span class="o">.</span><span class="n">max_length</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LongName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">ShortName</span><span class="o">.</span><span class="n">max_length</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ShortName</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">ShortName</span><span class="o">.</span><span class="n">max_length</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MediumName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LongName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ShortName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MediumName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LongName</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>            
+    <span class="k">return</span> <span class="n">result</span>
+        
+       </div>
+<div class="viewcode-block" id="Membership"><a class="viewcode-back" href="../index.html#dabepg.Membership">[docs]</a><span class="k">class</span> <span class="nc">Membership</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shortcrid</span><span class="p">,</span> <span class="n">crid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shortcrid</span> <span class="o">=</span> <span class="n">shortcrid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crid</span> <span class="o">=</span> <span class="n">crid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">index</span> 
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shortcrid</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Membership: shortcrid=</span><span class="si">%d</span><span class="s">, crid=</span><span class="si">%s</span><span class="s">, index=</span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shortcrid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">crid</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+    </div>
+<div class="viewcode-block" id="Multimedia"><a class="viewcode-back" href="../index.html#dabepg.Multimedia">[docs]</a><span class="k">class</span> <span class="nc">Multimedia</span><span class="p">:</span>
+    
+    <span class="n">LOGO_UNRESTRICTED</span> <span class="o">=</span><span class="s">&quot;logo_unrestricted&quot;</span>    
+    <span class="n">LOGO_MONO_SQUARE</span> <span class="o">=</span> <span class="s">&quot;logo_mono_square&quot;</span>
+    <span class="n">LOGO_COLOUR_SQUARE</span> <span class="o">=</span> <span class="s">&quot;logo_colour_square&quot;</span>
+    <span class="n">LOGO_MONO_RECTANGLE</span> <span class="o">=</span> <span class="s">&quot;logo_mono_rectangle&quot;</span>
+    <span class="n">LOGO_COLOUR_RECTANGLE</span> <span class="o">=</span> <span class="s">&quot;logo_colour_rectangle&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">LOGO_UNRESTRICTED</span><span class="p">,</span> <span class="n">mimetype</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mimetype</span> <span class="o">=</span> <span class="n">mimetype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">height</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        
+        </div>
+<div class="viewcode-block" id="Programme"><a class="viewcode-back" href="../index.html#dabepg.Programme">[docs]</a><span class="k">class</span> <span class="nc">Programme</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shortcrid</span><span class="p">,</span> <span class="n">crid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">onair</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">recommendation</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shortcrid</span> <span class="o">=</span> <span class="n">shortcrid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crid</span> <span class="o">=</span> <span class="n">crid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitrate</span> <span class="o">=</span> <span class="n">bitrate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onair</span> <span class="o">=</span> <span class="n">onair</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recommendation</span> <span class="o">=</span> <span class="n">recommendation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">media</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">genres</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memberships</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        
+<div class="viewcode-block" id="Programme.get_name"><a class="viewcode-back" href="../index.html#dabepg.Programme.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">LongName</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns the first name set with a length at or below the max_length field, which </span>
+<span class="sd">           defaults to the MAX_LENGTH of a LongName field&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">LongName</span><span class="p">,</span> <span class="n">MediumName</span><span class="p">,</span> <span class="n">ShortName</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">type</span><span class="p">)]:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_length</span><span class="p">:</span> <span class="k">return</span> <span class="n">name</span>
+                </div>
+<div class="viewcode-block" id="Programme.get_description"><a class="viewcode-back" href="../index.html#dabepg.Programme.get_description">[docs]</a>    <span class="k">def</span> <span class="nf">get_description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">LongDescription</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns the first description set with a length at or below the max_length field, which </span>
+<span class="sd">           defaults to the MAX_LENGTH of a LongDescription field&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">LongDescription</span><span class="p">,</span> <span class="n">ShortDescription</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">description</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">media</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">type</span><span class="p">)]:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">description</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_length</span><span class="p">:</span> <span class="k">return</span> <span class="n">description</span>        
+                </div>
+<div class="viewcode-block" id="Programme.get_times"><a class="viewcode-back" href="../index.html#dabepg.Programme.get_times">[docs]</a>    <span class="k">def</span> <span class="nf">get_times</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns a list of (datetime, timedelta) tuples collated from the billed times of the locations</span>
+<span class="sd">           of this programme&quot;&quot;&quot;</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locations</span><span class="p">:</span>
+            <span class="n">times</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="n">x</span><span class="o">.</span><span class="n">get_billed_time</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">get_billed_duration</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">location</span><span class="o">.</span><span class="n">times</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">times</span>
+        </div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Programme: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>    
+    
+    </div>
+<div class="viewcode-block" id="ProgrammeEvent"><a class="viewcode-back" href="../index.html#dabepg.ProgrammeEvent">[docs]</a><span class="k">class</span> <span class="nc">ProgrammeEvent</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shortcrid</span><span class="p">,</span> <span class="n">originator</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">crid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">onair</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">recommendation</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shortcrid</span> <span class="o">=</span> <span class="n">shortcrid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">originator</span> <span class="o">=</span> <span class="n">originator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crid</span> <span class="o">=</span> <span class="n">crid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitrate</span> <span class="o">=</span> <span class="n">bitrate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">onair</span> <span class="o">=</span> <span class="n">onair</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recommendation</span> <span class="o">=</span> <span class="n">recommendation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">media</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">genres</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memberships</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[]</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;ProgrammeEvent: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    
+    </div>
+<div class="viewcode-block" id="Schedule"><a class="viewcode-back" href="../index.html#dabepg.Schedule">[docs]</a><span class="k">class</span> <span class="nc">Schedule</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">created</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tzlocal</span><span class="p">()),</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">originator</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">created</span> <span class="o">=</span> <span class="n">created</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">originator</span> <span class="o">=</span> <span class="n">originator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">programmes</span> <span class="o">=</span> <span class="p">[]</span>
+        
+<div class="viewcode-block" id="Schedule.get_scope"><a class="viewcode-back" href="../index.html#dabepg.Schedule.get_scope">[docs]</a>    <span class="k">def</span> <span class="nf">get_scope</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">services</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">programme</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">programmes</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">programme</span><span class="o">.</span><span class="n">locations</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">location</span><span class="o">.</span><span class="n">times</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">RelativeTime</span><span class="p">):</span> <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_time</span><span class="p">:</span>
+                        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_time</span>
+                    <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_time</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_duration</span><span class="p">:</span>
+                        <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_time</span> <span class="o">+</span> <span class="n">time</span><span class="o">.</span><span class="n">billed_duration</span>
+                <span class="k">for</span> <span class="n">bearer</span> <span class="ow">in</span> <span class="n">location</span><span class="o">.</span><span class="n">bearers</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bearer</span><span class="p">,</span> <span class="n">Bearer</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bearer</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">services</span><span class="p">:</span>
+                        <span class="n">services</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bearer</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="c"># we have a Bearer</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bearer</span><span class="p">,</span> <span class="n">ContentId</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bearer</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">services</span><span class="p">:</span>
+                        <span class="n">services</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bearer</span><span class="p">)</span> <span class="c"># we have a ContentId</span>
+                    
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">end</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>    
+    
+        <span class="k">return</span> <span class="n">Scope</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">services</span><span class="p">)</span>
+        
+        </div></div>
+<div class="viewcode-block" id="Scope"><a class="viewcode-back" href="../index.html#dabepg.Scope">[docs]</a><span class="k">class</span> <span class="nc">Scope</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">services</span> <span class="o">=</span> <span class="p">[]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">services</span> <span class="o">=</span> <span class="n">services</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;start=</span><span class="si">%s</span><span class="s">, end=</span><span class="si">%s</span><span class="s">, services=</span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Scope: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+                </div>
+<div class="viewcode-block" id="Service"><a class="viewcode-back" href="../index.html#dabepg.Service">[docs]</a><span class="k">class</span> <span class="nc">Service</span><span class="p">:</span>
+    
+    <span class="n">PRIMARY</span> <span class="o">=</span> <span class="s">&quot;primary&quot;</span>
+    <span class="n">SECONDARY</span> <span class="o">=</span> <span class="s">&quot;secondary&quot;</span>
+    
+    <span class="n">AUDIO</span> <span class="o">=</span> <span class="s">&quot;audio&quot;</span>
+    <span class="n">DLS</span> <span class="o">=</span> <span class="s">&quot;DLS&quot;</span>
+    <span class="n">SLIDESHOW</span> <span class="o">=</span> <span class="s">&quot;MOTSlideshow&quot;</span>
+    <span class="n">BWS</span> <span class="o">=</span> <span class="s">&quot;MOTBWS&quot;</span>
+    <span class="n">TPEG</span> <span class="o">=</span> <span class="s">&quot;TPEG&quot;</span>
+    <span class="n">DGPS</span> <span class="o">=</span> <span class="s">&quot;DGPS&quot;</span>
+    <span class="n">PROPRIETARY</span> <span class="o">=</span> <span class="s">&quot;proprietary&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">PRIMARY</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="n">AUDIO</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">locale</span><span class="o">=</span><span class="n">locale</span><span class="o">.</span><span class="n">getdefaultlocale</span><span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitrate</span> <span class="o">=</span> <span class="n">bitrate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">=</span> <span class="n">format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locale</span> <span class="o">=</span> <span class="n">locale</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">media</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">genres</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">simulcasts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="o">=</span> <span class="p">[]</span>
+        
+<div class="viewcode-block" id="Service.get_name"><a class="viewcode-back" href="../index.html#dabepg.Service.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">LongName</span><span class="o">.</span><span class="n">max_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns the first name set with a length at or below the max_length field, which </span>
+<span class="sd">           defaults to the MAX_LENGTH of a LongName field&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">LongName</span><span class="p">,</span> <span class="n">MediumName</span><span class="p">,</span> <span class="n">ShortName</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">type</span><span class="p">)]:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_length</span><span class="p">:</span> <span class="k">return</span> <span class="n">name</span>        
+        
+        </div></div>
+<div class="viewcode-block" id="ServiceInfo"><a class="viewcode-back" href="../index.html#dabepg.ServiceInfo">[docs]</a><span class="k">class</span> <span class="nc">ServiceInfo</span><span class="p">:</span>
+    
+    <span class="n">DAB</span><span class="o">=</span><span class="s">&#39;DAB&#39;</span>
+    <span class="n">DRM</span><span class="o">=</span><span class="s">&#39;DRM&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">created</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tzlocal</span><span class="p">()),</span> <span class="n">version</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">originator</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">DAB</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">created</span> <span class="o">=</span> <span class="n">created</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">originator</span> <span class="o">=</span> <span class="n">originator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">provider</span> <span class="o">=</span> <span class="n">provider</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensembles</span> <span class="o">=</span> <span class="p">[]</span>
+        
+         </div>
+<div class="viewcode-block" id="Genre"><a class="viewcode-back" href="../index.html#dabepg.Genre">[docs]</a><span class="k">class</span> <span class="nc">Genre</span><span class="p">:</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">href</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">href</span> <span class="o">=</span> <span class="n">href</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>     
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">href</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;&lt;Genre: </span><span class="si">%s</span><span class="s">&gt;&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">DAB EPG v0.3.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Ben Poor.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
