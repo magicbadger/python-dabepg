@@ -442,7 +442,7 @@ def decode_timepoint(bits):
 
 def encode_contentid(id):
 
-    if id.sid and id.scids:
+    if id.sid is not None and id.scids is not None:
         bits = bitarray(4)
         bits.setall(False)
     
