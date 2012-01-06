@@ -1,9 +1,15 @@
+python-dabepg (0.3.1) maverick; urgency=low
+
+  * Fixed bug with XML filename generation not printing content ID values to hex
+
+ -- Ben Poor <ben.poor@thisisglobal.com>  Fri, 06 Jan 2012 15:24:39 +0000
+
 python-dabepg (0.3.0) maverick; urgency=low
 
   * Added ServiceInfo binary marshalling
   * Fixed some silly bugs
 
- -- Ben Poor <ben.poor@thisisglobal.com>  Wed, 13 Jul 2011 14:53:55 +0100
+ -- Ben Poor <ben.poor@thisisglobal.com>  Fri, 06 Jan 2012 15:03:55 +0000
 
 python-dabepg (0.2.1) maverick; urgency=low
 

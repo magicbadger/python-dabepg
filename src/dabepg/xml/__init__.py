@@ -362,7 +362,7 @@ def get_iso_period(duration):
     return result
 
 def get_schedule_filename(date, id):
-    return '%s_%s_%s_%s_%s_PI.xml' % (date.strftime('%Y%m%d'), id.ecc, id.eid, id.sid, id.scids)
+    return '%s_%02x_%04x_%04x_%x_PI.xml' % (date.strftime('%Y%m%d'), id.ecc, id.eid, id.sid, id.scids)
 
 def get_serviceinfo_filename(date, channel):
     
