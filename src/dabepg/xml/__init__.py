@@ -53,6 +53,7 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
     info_element = doc.createElement('serviceInformation')
     info_element.namespaceURI = SCHEDULE_NS
     if info.version > 1: info_element.setAttribute('version', str(info.version))
+    info.created = info.created.replace(microsecond=0)
     info_element.setAttribute('creationTime', info.created.isoformat())
     if info.originator is not None:
         info_element.setAttribute('originator', info.originator)
@@ -149,6 +150,7 @@ def marshall_epg(epg, listener=MarshallListener(), **kwargs):
     schedule_element = doc.createElement('schedule')
     epg_element.appendChild(schedule_element)
     schedule_element.setAttribute('version', str(schedule.version))
+    schedule.created = schedule.created.replace(microsecond=0)
     schedule_element.setAttribute('creationTime', schedule.created.isoformat())
     if schedule.originator is not None:
         schedule_element.setAttribute('originator', schedule.originator)
@@ -278,8 +280,8 @@ def build_mediagroup(doc, media, namespace=None):
         media_element.setAttribute('url', media.url)
         media_element.setAttribute('type', media.type)
         if media.type == Multimedia.LOGO_UNRESTRICTED:
-            media_element.setAttribute('height', str(media.height))
-            media_element.setAttribute('width', str(media.width))
+            if media.height: media_element.setAttribute('height', str(media.height))
+            if media.width: media_element.setAttribute('width', str(media.width))
     return mediagroup_element
     
 def build_genre(doc, genre):

@@ -810,8 +810,8 @@ def build_mediagroup(media):
                 media_element.attributes.append(Attribute(0x82, media.url))
             if media.type == Multimedia.LOGO_UNRESTRICTED:
                 media_element.attributes.append(Attribute(0x83, 0x02, 8))
-                media_element.attributes.append(Attribute(0x84, media.width, 16))
-                media_element.attributes.append(Attribute(0x85, media.height, 16))
+                if media.width: media_element.attributes.append(Attribute(0x84, media.width, 16))
+                if media.height: media_element.attributes.append(Attribute(0x85, media.height, 16))
             if media.type == Multimedia.LOGO_MONO_SQUARE:
                 media_element.attributes.append(Attribute(0x83, 0x03, 8))
             if media.type == Multimedia.LOGO_COLOUR_SQUARE:
