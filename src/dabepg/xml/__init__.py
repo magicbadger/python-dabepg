@@ -53,13 +53,10 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
     info_element = doc.createElement('serviceInformation')
     info_element.namespaceURI = SCHEDULE_NS
     if info.version > 1: info_element.setAttribute('version', str(info.version))
-    info.created = info.created.replace(microsecond=0)
-    info_element.setAttribute('creationTime', info.created.isoformat())
-    if info.originator is not None:
-        info_element.setAttribute('originator', info.originator)
-    if info.provider is not None:
-        info_element.setAttribute('serviceProvider', info.provider)   
-    info_element.setAttribute('system', info.type)
+    if info.created: info_element.setAttribute('creationTime', info.created.replace(microsecond=0).isoformat())
+    if info.originator: info_element.setAttribute('originator', info.originator)
+    if info.provider: info_element.setAttribute('serviceProvider', info.provider)   
+    if info.type != ServiceInfo.DAB: info_element.setAttribute('system', info.type)
     doc.appendChild(info_element)
     
     # fudge the namespaces in there
@@ -78,9 +75,7 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
             ensemble_element.appendChild(build_name(doc, name))
         for frequency in ensemble.frequencies:
             frequency_element = doc.createElement('frequency')
-            if len(ensemble_element.getElementsByTagName('frequency')) == 0:
-                frequency_element.setAttribute('type', 'primary')
-            else:
+            if len(ensemble.frequencies) > 1 and len(ensemble_element.getElementsByTagName('frequency')) > 0:
                 frequency_element.setAttribute('type', 'secondary')
             frequency_element.setAttribute('kHz', str(frequency))
             ensemble_element.appendChild(frequency_element)
@@ -89,7 +84,7 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
         for service in ensemble.services:
             service_element = doc.createElement('service')
             if service.version > 1: service_element.setAttribute('version', str(service.version))
-            service_element.setAttribute('format', service.format)
+            if service.format != Service.AUDIO: service_element.setAttribute('format', service.format)
             service_id_element = doc.createElement('serviceID')
             service_id_element.setAttribute('id', str(service.id))
             service_element.appendChild(service_id_element)
@@ -280,8 +275,8 @@ def build_mediagroup(doc, media, namespace=None):
         media_element.setAttribute('url', media.url)
         media_element.setAttribute('type', media.type)
         if media.type == Multimedia.LOGO_UNRESTRICTED:
-            if media.height: media_element.setAttribute('height', str(media.height))
-            if media.width: media_element.setAttribute('width', str(media.width))
+            media_element.setAttribute('height', str(media.height))
+            media_element.setAttribute('width', str(media.width))
     return mediagroup_element
     
 def build_genre(doc, genre):
