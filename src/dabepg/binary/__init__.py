@@ -64,7 +64,7 @@ class Element:
             bits += tmp
         elif datalength >= 254 and datalength <= 1<<16:
             tmp = bitarray()
-            tmp.fromstring('\xfe')
+            tmp.frombytes('\xfe')
             bits += tmp
             tmp = int_to_bitarray(datalength, 16)
             bits += tmp
@@ -271,7 +271,8 @@ class Attribute:
         else: parent_tag = int(parent)
         if (parent_tag, tag) in [
                 (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80),
-                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82), (0x03, 0x80), (0x26, 0x81)
+                (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82), (0x03, 0x80), (0x26, 0x81),
+                (0x27, 0x81), (0x2b, 0x84), (0x2b, 0x85)
         ]: # integer
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
             value = int(data.to01(), 2)
@@ -288,13 +289,14 @@ class Attribute:
                                    (0x03, 0x81)]: # time
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as timepoint', parent_tag, tag)
             value = decode_timepoint(data)
-        elif (parent_tag, tag) in [(0x20, 0x82), (0x03, 0x82), (0x03, 0x83)]: # string
+        elif (parent_tag, tag) in [(0x20, 0x82), (0x21, 0x82), (0x03, 0x82), (0x03, 0x83),
+                (0x2b, 0x82)]: # string
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as string', parent_tag, tag)
             value = data.tostring()
-        elif (parent_tag, tag) in [(0x25, 0x80), (0x26, 0x80), (0x29, 0x80)]: # content ID
+        elif (parent_tag, tag) in [(0x25, 0x80), (0x26, 0x80), (0x29, 0x80), (0x2d, 0x80)]: # content ID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
             value = decode_contentid(data)
-        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84), (0x03, 0x84)]:
+        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84), (0x03, 0x84), (0x2b, 0x83)]: # ENUM
             try:
                 value = decode_enum(parent_tag, tag, data)
             except:
@@ -672,7 +674,7 @@ def marshall_serviceinfo(info):
 
     info_element.children.append(ensemble_element)
 
-    return info_element.tobytes().tostring()
+    return info_element.tobytes().tobytes()
 
 def marshall_epg(epg):
     
@@ -740,7 +742,7 @@ def marshall_epg(epg):
             
         schedule_element.children.append(programme_element)
      
-    return epg_element.tobytes().tostring()
+    return epg_element.tobytes().tobytes()
     
 def build_scope(scope):
     scope_element = Element(0x24)
@@ -1140,7 +1142,7 @@ def int_to_bitarray(i, n):
 def bitarray_to_hex(bits):
     rows = []
     for i in range(0, len(bits), 256):
-        rows.append(' '.join(["%02X" % ord(x) for x in bits[i:i+256].tostring()]).strip())
+        rows.append(' '.join(["%02X" % ord(x) for x in bits[i:i+256].tobytes()]).strip())
     return '\r\n'.join(rows)
 
 def hex_to_bitarray(hex):
@@ -1170,10 +1172,16 @@ def unmarshall(i):
     b = bitarray()
     if isinstance(i, file):
         logger.debug('object is a file')
-        b.fromfile(i)
+        import StringIO
+        io = StringIO.StringIO()
+        d = i.read()
+        while d:
+            io.write(d)
+            d = i.read()
+        b.frombytes(io.getvalue()) 
     else:
         logger.debug('object is a string of %d bytes', len(str(i)))
-        b.fromstring(str(i))
+        b.frombytes(i)
         
     e = Element.frombits(b)
     logger.debug('unmarshalled element %s', e)
