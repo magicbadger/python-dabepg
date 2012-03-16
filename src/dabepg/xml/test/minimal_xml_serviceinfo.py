@@ -20,32 +20,23 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #===============================================================================
 
-import unittest
-
 from dabepg import * 
-from dabepg.bands import *
+from dabepg.bands import BAND_5A
 from dabepg.xml import marshall
-import datetime
 
-class Test(unittest.TestCase):
+info = ServiceInfo()
+ensemble = Ensemble(ContentId('e1', 'cfff'))
+info.ensembles.append(ensemble)
+ensemble.frequencies.append(BAND_5A)
+ensemble.names.append(ShortName('Demo'))
+ensemble.names.append(MediumName('Demo Mux'))
 
-    def test_build_xml_serviceinfo(self):
-        info = ServiceInfo()
-        ensemble = Ensemble(ContentId('e1', 'cfff'))
-        info.ensembles.append(ensemble)
-        ensemble.frequencies.append(BAND_5A)
-        ensemble.names.append(ShortName('Demo'))
-        ensemble.names.append(MediumName('Demo Mux'))
-        
-        # Service
-        service = Service(ContentId('e1', 'cfff', 'c0fe', '0'))
-        service.names.append(ShortName('Service'))
-        service.names.append(MediumName('Service'))
-        service.media.append(Multimedia('http://slides.musicradio.com/ess/jpg/Testcard.jpg', Multimedia.LOGO_UNRESTRICTED, width=320, height=240))
-        service.media.append(Multimedia('http://www.capitalfm.com/logo', Multimedia.LOGO_UNRESTRICTED))
-        ensemble.services.append(service)
+# Service
+service = Service(ContentId('e1', 'cfff', 'c0fe', '0'))
+service.names.append(ShortName('Service'))
+service.names.append(MediumName('Service'))
+service.media.append(Multimedia('http://www.capitalfm.com/logos/32x32.png', Multimedia.LOGO_COLOUR_SQUARE))
+service.media.append(Multimedia('http://www.capitalfm.com/logos/320x240.png', Multimedia.LOGO_UNRESTRICTED, width=320, height=240))
+ensemble.services.append(service)
 
-        print marshall(info)
-
-if __name__ == "__main__":
-    unittest.main()
+print marshall(info, indent='  ')
