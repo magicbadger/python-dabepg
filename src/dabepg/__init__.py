@@ -458,7 +458,10 @@ class Multimedia:
         self.mimetype = mimetype
         self.height = height
         self.width = width
-        
+        if type == Multimedia.LOGO_UNRESTRICTED and (not height or not width):
+            raise ValueError('an unrestricted logo must have both height and width defined') 
+        elif type != Multimedia.LOGO_UNRESTRICTED and (height or width):
+            raise ValueError('should not specify width or height when type is restricted')    
         
 class Programme:
     """Describes and locates a programme.
@@ -662,7 +665,7 @@ class ServiceInfo:
     DAB='DAB'
     DRM='DRM'
     
-    def __init__(self, created=datetime.datetime.now(tzlocal()), version=1, originator=None, provider=None, type=DAB):
+    def __init__(self, created=None, version=1, originator=None, provider=None, type=DAB):
         self.created = created
         self.version = version
         self.originator = originator
