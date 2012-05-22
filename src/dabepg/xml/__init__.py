@@ -86,8 +86,10 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
             if service.version > 1: service_element.setAttribute('version', str(service.version))
             if service.format != Service.AUDIO: service_element.setAttribute('format', service.format)
             service_id_element = doc.createElement('serviceID')
-            service_id_element.setAttribute('id', str(service.id))
-            service_element.appendChild(service_id_element)
+            for i, id in enumerate(service.ids):
+                service_id_element.setAttribute('id', str(id))
+                service_id_element.setAttribute('type', 'secondary' if i else 'primary') 
+                service_element.appendChild(service_id_element)
             if service.bitrate is not None: 
                 service_element.setAttribute('bitrate', str(service.bitrate))
             # names
