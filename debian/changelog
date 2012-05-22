@@ -1,9 +1,11 @@
-python-dabepg (0.3.1) maverick; urgency=low
+python-dabepg (0.4.0) maverick; urgency=low
 
   * Fixed bug with XML filename generation not printing content ID values to hex
   * Fixed bug with not checking existence of height and width values for an 
     unrestricted logo before XML marshalling
   * Added minimal SI marshalling examples to XML and binary
+  * Added PI and SI unmarshalling examples to XML and binary (can read from file or stdin)
+  * Made 'id' attribute of Service object a list, to reflect multiple ServiceID elements
 
  -- Ben Poor <ben.poor@thisisglobal.com>  Fri, 06 Jan 2012 15:24:39 +0000
 

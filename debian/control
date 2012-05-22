@@ -7,5 +7,5 @@ Standards-Version: 3.8.0
 
 Package: python-dabepg
 Architecture: any
-Depends: ${python:Depends}, ${misc:Depends}, python-bitarray (>= 0.4.0)
+Depends: ${python:Depends}, ${misc:Depends}
 Description: DAB EPG XML/binary implementation

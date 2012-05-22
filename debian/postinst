@@ -1,3 +1,4 @@
 #!/bin/bash -e
 
 easy_install -U isodate
+easy_install -U bitarray

@@ -22,7 +22,6 @@
 
 from dabepg import * 
 from dabepg.bands import BAND_5A
-from dabepg.xml import marshall
 
 info = ServiceInfo()
 ensemble = Ensemble(ContentId('e1', 'cfff'))
@@ -35,8 +34,11 @@ ensemble.names.append(MediumName('Demo Mux'))
 service = Service(ContentId('e1', 'cfff', 'c0fe', '0'))
 service.names.append(ShortName('Service'))
 service.names.append(MediumName('Service'))
-service.media.append(Multimedia('http://www.capitalfm.com/logos/32x32.png', Multimedia.LOGO_COLOUR_SQUARE))
+service.media.append(Multimedia('32x32.png', Multimedia.LOGO_COLOUR_SQUARE))
+service.media.append(Multimedia('112x32.png', Multimedia.LOGO_COLOUR_RECTANGLE))
+service.media.append(Multimedia('128x128.png', Multimedia.LOGO_UNRESTRICTED, width=128, height=128))
 service.media.append(Multimedia('http://www.capitalfm.com/logos/320x240.png', Multimedia.LOGO_UNRESTRICTED, width=320, height=240))
 ensemble.services.append(service)
 
+from dabepg.xml import marshall
 print marshall(info, indent='  ')

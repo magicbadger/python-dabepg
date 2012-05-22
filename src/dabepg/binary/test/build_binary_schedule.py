@@ -66,15 +66,8 @@ class Test(unittest.TestCase):
         programme.events.append(event2)
         
         schedule.programmes.append(programme)
-        f = open('epg.dat', 'wb')
         data = marshall(epg)
-        f.write(data)
-        f.close()
-        from dabepg.binary import bitarray_to_hex
-        from bitarray import bitarray
-        tmp = bitarray()
-        tmp.fromstring(data)
-        print bitarray_to_hex(tmp)
+        print data
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

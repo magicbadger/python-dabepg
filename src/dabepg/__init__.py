@@ -621,7 +621,7 @@ class Scope:
 class Service:
     """DAB Service details
 
-    :param id: Service ID
+    :param id: primary Service ID
     :type id: ContentId    
     :param bitrate: An indication of the highest bitrate of the service.
     :type bitrate: int   
@@ -639,7 +639,7 @@ class Service:
     PROPRIETARY = "proprietary"
     
     def __init__(self, id, bitrate=None, type=PRIMARY, format=AUDIO, version=1, locale=locale.getdefaultlocale()):
-        self.id = id
+        self.ids = [id]
         self.bitrate = bitrate
         self.format = format
         self.version = version

@@ -269,17 +269,23 @@ class Attribute:
         # decode data
         if isinstance(parent, Element): parent_tag = parent.tag
         else: parent_tag = int(parent)
-        if (parent_tag, tag) in [
+        if (parent_tag, tag) in [ # integer 
                 (0x02, 0x80), (0x21, 0x80), (0x23, 0x80), (0x23, 0x81), (0x23, 0x82), (0x23, 0x84), (0x25, 0x80),
                 (0x1c, 0x81), (0x1c, 0x82), (0x1c, 0x87), (0x17, 0x81), (0x17, 0x82), (0x03, 0x80), (0x26, 0x81),
-                (0x27, 0x81), (0x2b, 0x84), (0x2b, 0x85)
-        ]: # integer
+                (0x27, 0x81), (0x2b, 0x84), (0x2b, 0x85), (0x2e, 0x81)
+        ]: 
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as int', parent_tag, tag)
             value = int(data.to01(), 2)
-        elif (parent_tag, tag) in [(0x2c, 0x81), (0x2c, 0x83)]: # duration
+        elif (parent_tag, tag) in [ # string
+                (0x14, 0x80), (0x18, 0x80), (0x18, 0x83), (0x20, 0x82), (0x21, 0x82), (0x03, 0x82), (0x03, 0x83), 
+                (0x2b, 0x82)
+        ]:
+            logger.debug('decoding tag/attribute 0x%02x/0x%02x as string', parent_tag, tag)
+            value = data.tostring()
+        elif (parent_tag, tag) in [(0x2c, 0x81), (0x2c, 0x83), (0x2f, 0x80), (0x2f, 0x81)]: # duration
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as duration', parent_tag, tag)
             value = datetime.timedelta(seconds=int(data.to01(), 2))
-        elif (parent_tag, tag) in [(0x20, 0x80), (0x1c, 0x80), (0x17, 0x80)]: # CRID
+        elif (parent_tag, tag) in [(0x20, 0x80), (0x1c, 0x80), (0x17, 0x80), (0x2e, 0x80)]: # CRID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as CRID', parent_tag, tag)
             value = Crid.fromstring(data.tostring())
         elif (parent_tag, tag) in []: # genre
@@ -289,14 +295,10 @@ class Attribute:
                                    (0x03, 0x81)]: # time
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as timepoint', parent_tag, tag)
             value = decode_timepoint(data)
-        elif (parent_tag, tag) in [(0x20, 0x82), (0x21, 0x82), (0x03, 0x82), (0x03, 0x83),
-                (0x2b, 0x82)]: # string
-            logger.debug('decoding tag/attribute 0x%02x/0x%02x as string', parent_tag, tag)
-            value = data.tostring()
         elif (parent_tag, tag) in [(0x25, 0x80), (0x26, 0x80), (0x29, 0x80), (0x2d, 0x80)]: # content ID
             logger.debug('decoding tag/attribute 0x%02x/0x%02x as ContentId', parent_tag, tag)
             value = decode_contentid(data)
-        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84), (0x03, 0x84), (0x2b, 0x83)]: # ENUM
+        elif (parent_tag, tag) in [(0x1c, 0x83), (0x1c, 0x84), (0x03, 0x84), (0x2b, 0x83), (0x2e, 0x83), (0x2e, 0x84)]: # ENUM
             try:
                 value = decode_enum(parent_tag, tag, data)
             except:
@@ -894,10 +896,12 @@ def build_service(service):
     # bitrate
     if service.bitrate: service_element.attributes.append(Attribute(0x83, service.bitrate * 10, 16))
 
-    # service ID - TODO signal secondary ID
-    serviceid_element = Element(0x29)
-    serviceid_element.attributes.append(Attribute(0x80, service.id))    
-    service_element.children.append(serviceid_element)
+    # service IDs - the first in the list is primary, all others secondary 
+    for i, id in enumerate(service.ids):
+        serviceid_element = Element(0x29)
+        serviceid_element.attributes.append(Attribute(0x80, id))    
+        if i > 0: serviceid_element.attributes.append(Attribute(0x81, 0x02, 8)) # mark as secondary
+        service_element.children.append(serviceid_element)
 
     # simulcast TODO
 
