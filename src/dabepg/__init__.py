@@ -641,6 +641,7 @@ class Service:
     def __init__(self, id, bitrate=None, type=PRIMARY, format=AUDIO, version=1, locale=locale.getdefaultlocale()):
         self.ids = [id]
         self.bitrate = bitrate
+        self.type = type
         self.format = format
         self.version = version
         self.locale = locale
