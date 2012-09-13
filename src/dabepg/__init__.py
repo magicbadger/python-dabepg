@@ -143,9 +143,9 @@ class ContentId:
         return ContentId(ecc, eid, sid, scids)
     
     def __str__(self):
-        id = '%x.%x' % (self.ecc, self.eid)
+        id = '{ecc:02x}.{eid:04x}'.format(ecc=self.ecc, eid=self.eid)
         if self.sid is not None and self.scids is not None:
-            id += '.%x.%x' % (self.sid, self.scids)
+            id += '.{sid:04x}.{scids:x}'.format(sid=self.sid, scids=self.scids)
         return id
     
     def __repr__(self):
