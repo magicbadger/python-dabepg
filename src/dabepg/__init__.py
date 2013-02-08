@@ -338,6 +338,7 @@ class Text:
     """Abstract class for textual information"""
     
     def __init__(self, text, max_length, locale=locale.getdefaultlocale()):
+        if not isinstance(text, basestring): raise ValueError('text must be of a basestring subtype, not %s: %s', type(text), text)
         if len(text) > max_length: raise ValueError('text length exceeds the maximum: %d>%d' % (len(text), max_length))
         self.max_length = max_length
         self.text = text
