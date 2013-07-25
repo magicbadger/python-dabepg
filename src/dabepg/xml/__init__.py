@@ -294,7 +294,7 @@ def build_membership(doc, membership):
     membership_element = doc.createElement('memberOf')
     membership_element.setAttribute('shortId', str(membership.shortcrid))
     if membership.crid is not None:
-        membership_element.setAttribute('crid', membership.crid)
+        membership_element.setAttribute('crid', str(membership.crid))
     if membership.index is not None: 
         membership_element.setAttribute('index', str(membership.index))
     return membership_element  
