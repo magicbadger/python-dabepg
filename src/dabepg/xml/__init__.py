@@ -38,14 +38,14 @@ class MarshallListener:
     def on_element(self, doc, object, element):
         pass
     
-def marshall(obj, listener=MarshallListener(), **kwargs):
+def marshall(obj, listener=MarshallListener(), indent=None, **kwargs):
     """Marshalls an :class:Epg or :class:ServiceInfo to its XML document"""
     
     if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj, listener, **kwargs)
     elif isinstance(obj, Epg): return marshall_epg(obj, listener, **kwargs)
     else: raise ValueError('neither a ServiceInfo nor an Epg be')
     
-def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
+def marshall_serviceinfo(info, listener=MarshallListener(), indent=None, **kwargs):
     
     doc = xml.dom.minidom.Document()
     
@@ -118,12 +118,19 @@ def marshall_serviceinfo(info, listener=MarshallListener(), **kwargs):
         
     listener.on_element(doc, info, info_element)
         
-    if kwargs.has_key('indent'):
-        return doc.toprettyxml(indent=kwargs['indent'], encoding='UTF-8')
+    if indent:
+        return doc.toprettyxml(indent=indent, encoding='UTF-8')
     else:
         return doc.toxml('UTF-8')
 
-def marshall_epg(epg, listener=MarshallListener(), **kwargs):
+def marshall_epg(epg, listener=MarshallListener(), indent=None):
+    """
+    Encodes an EPG into XML
+    
+    :epg: EPG object to encode
+    :listener: Observer notified when an element is created
+    :indent: Characters to use for XML indentation
+    """
     
     doc = xml.dom.minidom.Document()
     
@@ -222,8 +229,8 @@ def marshall_epg(epg, listener=MarshallListener(), **kwargs):
         
     listener.on_element(doc, epg, epg_element)
         
-    if kwargs.has_key('indent'):
-        return doc.toprettyxml(indent=kwargs['indent'], encoding='UTF-8')
+    if indent:
+        return doc.toprettyxml(indent=indent, encoding='UTF-8')
     else:
         return doc.toxml('UTF-8')
     
@@ -347,13 +354,10 @@ def build_programme_event(doc, event, listener):
     
 def get_iso_period(duration):
     if isinstance(duration, int): duration = datetime.timedelta(seconds=duration)
-    days = duration.days
-    hours = duration.seconds / (60 * 60)
+    hours = (duration.days * 24) + duration.seconds / (60 * 60)
     minutes = (duration.seconds - hours * 60 * 60) / 60
     seconds = (duration.seconds - hours * 60 * 60 - minutes * 60)
-    result = 'P'
-    if days > 0: result +='%dD' % days
-    result += 'T'
+    result = 'PT'
     if hours > 0: result += '%dH' % hours
     if minutes > 0: result += '%dM' % minutes
     if seconds > 0: result += '%dS' % seconds
