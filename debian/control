@@ -6,6 +6,6 @@ Build-Depends: debhelper (>= 7), python (>= 2.6), cdbs
 Standards-Version: 3.8.0
 
 Package: python-dabepg
-Architecture: any
-Depends: ${python:Depends}, ${misc:Depends}
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}, python-bitarray, python-isodate
 Description: DAB EPG XML/binary implementation
