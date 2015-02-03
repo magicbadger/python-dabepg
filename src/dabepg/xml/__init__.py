@@ -38,7 +38,7 @@ class MarshallListener:
     def on_element(self, doc, object, element):
         pass
     
-def marshall(obj, listener=MarshallListener(), indent=None, **kwargs):
+def marshall(obj, listener=MarshallListener(), **kwargs):
     """Marshalls an :class:Epg or :class:ServiceInfo to its XML document"""
     
     if isinstance(obj, ServiceInfo): return marshall_serviceinfo(obj, listener, **kwargs)
@@ -229,7 +229,7 @@ def marshall_epg(epg, listener=MarshallListener(), indent=None):
         
     listener.on_element(doc, epg, epg_element)
         
-    if indent:
+    if indent is not None:
         return doc.toprettyxml(indent=indent, encoding='UTF-8')
     else:
         return doc.toxml('UTF-8')

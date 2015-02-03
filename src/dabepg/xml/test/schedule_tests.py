@@ -55,12 +55,8 @@ class Test(unittest.TestCase):
         schedule.programmes.append(programme)
         
         from dabepg.xml import marshall as marshall_xml
-        from dabepg.binary import marshall as marshall_binary
         print marshall_xml(epg, indent='   ')
         
-        print marshall_binary(epg)
-    
-
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

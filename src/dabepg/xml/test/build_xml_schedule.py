@@ -66,7 +66,7 @@ class Test(unittest.TestCase):
         programme.events.append(event2)
         
         schedule.programmes.append(programme)
-        print marshall(epg)
+        print marshall(epg, indent='   ')
     
 
 if __name__ == "__main__":

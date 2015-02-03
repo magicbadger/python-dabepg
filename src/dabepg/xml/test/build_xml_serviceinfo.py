@@ -89,7 +89,7 @@ class Test(unittest.TestCase):
         radio5.names.append(MediumName('BBC Radio 5'))
         ensemble.services.append(radio5)
 
-        print marshall(info)
+        print marshall(info, indent='   ')
 
 
 if __name__ == "__main__":

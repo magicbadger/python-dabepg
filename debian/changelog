@@ -1,4 +1,4 @@
-python-dabepg (0.4.0) maverick; urgency=low
+python-dabepg (0.4.0) stable; urgency=low
 
   * Fixed bug with XML filename generation not printing content ID values to hex
   * Fixed bug with not checking existence of height and width values for an 
@@ -10,14 +10,14 @@ python-dabepg (0.4.0) maverick; urgency=low
 
  -- Ben Poor <ben.poor@thisisglobal.com>  Thu, 25 Jul 2013 15:24:39 +0100
 
-python-dabepg (0.3.0) maverick; urgency=low
+python-dabepg (0.3.0) stable; urgency=low
 
   * Added ServiceInfo binary marshalling
   * Fixed some silly bugs
 
  -- Ben Poor <ben.poor@thisisglobal.com>  Fri, 06 Jan 2012 15:03:55 +0000
 
-python-dabepg (0.2.1) maverick; urgency=low
+python-dabepg (0.2.1) stable; urgency=low
 
   * fix for [9] - serviceScope id attribute has 'id=' in value 
   * fix for [10] - Error in get_scope(): AttributeError: ContentId 
@@ -25,7 +25,7 @@ python-dabepg (0.2.1) maverick; urgency=low
 
  -- Pete Redhead <peteredhead@googlemail.com> Fri, 08 Jul 2011 16:39:12 +0100
 
-python-dabepg (0.2.0) maverick; urgency=low
+python-dabepg (0.2.0) stable; urgency=low
 
   * fix for [8] - Duplicate serviceScope elements in scope node
 
