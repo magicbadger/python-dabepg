@@ -282,4 +282,16 @@ Where `doc` is the DOM document object, `object` is the originating API object t
 
 Additional elements can be added, or generated elements and attributes modified to suit.
 
+## Binary Serialization
+
+This can be achieved by using the binary serializer:
+
+```
+from dabepg.binary import marshall
+
+info = ServiceInfo()
+# populate the service info object
+
+print marshall(info)
+```
 
