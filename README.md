@@ -1,26 +1,14 @@
 # Description
 
-A python implementation of the ETSI DAB EPG standard ([http://pda.etsi.org/pda/home.asp?wki_id=hUkTWWG26f8ABCDFDRWAh ETSI TS 102 818]) incorporating an XML and binary marshaller ([http://pda.etsi.org/pda/home.asp?wki_id=-WO7ND5Wzoz_.%27,-28nGw ETSI TS 102 371]). 
+A python implementation of the ETSI DAB EPG XML standard (ETSI TS 102 818 v1.5), incorporating an XML and binary marshaller conforming to ETSI TS 102 371. 
 
-This can be used by broadcasters for producing or parsing EPG data to a DAB multiplex for broadcast, or for general schedule interfacing. It can also be used for producing data based on the DAB EPG standard, such as for [http://www.radioplayer.co.uk UK Radioplayer]
-
-The API closely follows the hierarchy of the XML specification, and hence maps well to the concepts contained within.
-
-# Current status
-
-It is being used in production environments for broadcasters, as well as for testing and evaluation. If you do intend to use it, please bear in mind that issues may well exist and testing should be performed to validate it for your particular use case.
-
-I am in the process of augmenting the library with a range of tests for this purpose.
+This can be used by broadcasters for producing or parsing EPG data to a DAB multiplex for broadcast, or for general schedule interfacing. It can also be used for producing data based around the DAB EPG standard, such as for [http://www.radioplayer.co.uk UK Radioplayer].
 
 # TODO
 
-The library generally ignore GI files, and there may be some shortcuts taken when marshalling/unmarshalling, e.g. not supporting DRM systems.
+The library generally ignore GI files, and there may be some shortcuts taken when marshalling/unmarshalling, e.g. not supporting DRM in any way.
 
-Most importantly, the library is currently missing any profiling considerations in its Binary marshaller - i.e. the splitting of the binary between Basic and Advanced profiles, as well as the combining of the two binary files upon binary unmarshalling.
-
-# Installation
-
-Currently, you'll have to download the source and use it locally. I'm working on making installation easier.
+There is no profiling split in the binary marshaller.
 
 # Usage
 
@@ -143,4 +131,155 @@ class Test(unittest.TestCase):
 ```
 
 ## Service Information
+
+Semantically equivalent to the example given in ETSI TS 102 818 Section X
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<serviceInformation creationTime="2001-02-28T00:00:00"
+	originator="BBC" serviceProvider="BBC" system="DAB" version="2"
+	xml:lang="en" xmlns="http://www.worlddab.org/schemas/epgSI/14"
+	xmlns:epg="http://www.worlddab.org/schemas/epgDataTypes/14" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.worlddab.org/schemas/epgSI/14 epgSI_14.xsd">
+	<ensemble id="e1.ce15">
+		<epg:shortName>BBC</epg:shortName>
+		<epg:mediumName>BBC National</epg:mediumName>
+		<frequency kHz="225648" type="primary" />
+		<service bitrate="160" format="audio">
+			<serviceID id="e1.ca15.c221.0" />
+			<epg:shortName>Radio 1</epg:shortName>
+			<epg:mediumName>BBC Radio 1</epg:mediumName>
+			<mediaDescription>
+				<epg:shortDescription><![CDATA[Rock and pop music from the BBC.]]></epg:shortDescription>
+			</mediaDescription>
+			<mediaDescription>
+				<epg:multimedia type="logo_colour_square"
+					url="http://www.bbc.co.uk/radio1/images/r1logo.png" />
+			</mediaDescription>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:3.6.7">
+				<epg:name><![CDATA[Rap/Hip Hop/Reggae]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:3.6.8">
+				<epg:name><![CDATA[Electronic/Club/Urban/Dance]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:2.5.0">
+				<epg:name><![CDATA[ARTISTIC PERFORMANCE]]></epg:name>
+			</epg:genre>
+			<epg:genre href="urn:tva:metadata:cs:ContentCS:2002:1.1.0">
+				<epg:name><![CDATA[ENTERTAINMENT]]></epg:name>
+			</epg:genre>
+			<link mimeType="text/html" url="http://www.bbc.co.uk/radio1" />
+			<keywords><![CDATA[music, pop, rock, dance, hip-hop, soul]]></keywords>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c222.0" />
+			<epg:shortName>Radio 2</epg:shortName>
+			<epg:mediumName>BBC Radio 2</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c223.0" />
+			<epg:shortName>Radio 3</epg:shortName>
+			<epg:mediumName>BBC Radio 3</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c224.0" />
+			<epg:shortName>Radio 4</epg:shortName>
+			<epg:mediumName>BBC Radio 4</epg:mediumName>
+		</service>
+		<service format="audio">
+			<serviceID id="e1.ca15.c225.0" />
+			<epg:shortName>Radio 5</epg:shortName>
+			<epg:mediumName>BBC Radio 5</epg:mediumName>
+		</service>
+	</ensemble>
+</serviceInformation>
+```
+
+The code to generate this is:
+
+```
+
+        info = ServiceInfo(version=2, originator='BBC', provider='BBC', created=datetime.datetime(2001, 02, 28, 0, 0, 0, 0))
+        ensemble = Ensemble(ContentId('e1', 'ce15'))
+        info.ensembles.append(ensemble)
+        ensemble.frequencies.append(225648)
+        ensemble.names.append(ShortName('BBC'))
+        ensemble.names.append(MediumName('BBC National'))
+        ensemble.media.append(ShortDescription('Digital Radio from the BBC'))
+        ensemble.media.append(Multimedia('http://www.bbc.co.uk/radio1/images/bbclogo.png', Multimedia.LOGO_COLOUR_RECTANGLE))
+        ensemble.media.append(Multimedia('http://www.bbc.co.uk/radio/bbclogo_large.png', Multimedia.LOGO_UNRESTRICTED, 'image/png', 200, 200))
+        ensemble.keywords.append('Radio1')
+        ensemble.keywords.append('Radio2')
+        ensemble.keywords.append('Radio3')
+        ensemble.keywords.append('Radio4')
+        ensemble.keywords.append('Radio5 Live')
+        ensemble.links.append(Link('http://www.bbc.co.uk/radio/', 'text/html', 'BBC Radio homepage'))
+        
+        # Radio 1
+        radio1 = Service(ContentId('e1', 'ca15', 'c221', '0'), bitrate=160)
+        radio1.names.append(ShortName('Radio 1'))
+        radio1.names.append(MediumName('BBC Radio 1'))
+        radio1.media.append(ShortDescription('Rock and pop music from the BBC.'))
+        radio1.media.append(Multimedia('http://www.bbc.co.uk/radio1/images/r1logo.png', Multimedia.LOGO_COLOUR_SQUARE))
+        radio1.genres.append(Genre('urn:tva:metadata:cs:ContentCS:2002:3.6.7', 'Rap/Hip Hop/Reggae'))
+        radio1.genres.append(Genre('urn:tva:metadata:cs:ContentCS:2002:3.6.8', 'Electronic/Club/Urban/Dance'))
+        radio1.genres.append(Genre('urn:tva:metadata:cs:ContentCS:2002:2.5.0', 'ARTISTIC PERFORMANCE'))
+        radio1.genres.append(Genre('urn:tva:metadata:cs:ContentCS:2002:1.1.0', 'ENTERTAINMENT'))
+        radio1.keywords.append('music')
+        radio1.keywords.append('pop')
+        radio1.keywords.append('rock')
+        radio1.keywords.append('dance')
+        radio1.keywords.append('hip-hop')
+        radio1.keywords.append('soul')
+        radio1.links.append(Link('http://www.bbc.co.uk/radio1', 'text/html'))
+        ensemble.services.append(radio1)
+
+        # Radio 2
+        radio2 = Service(ContentId('e1', 'ca15', 'c222', '0'))
+        radio2.names.append(ShortName('Radio 2'))
+        radio2.names.append(MediumName('BBC Radio 2'))
+        ensemble.services.append(radio2)
+        
+        # Radio 3
+        radio3 = Service(ContentId('e1', 'ca15', 'c223', '0'))
+        radio3.names.append(ShortName('Radio 3'))
+        radio3.names.append(MediumName('BBC Radio 3'))
+        ensemble.services.append(radio3)
+        
+        # Radio 4
+        radio4 = Service(ContentId('e1', 'ca15', 'c224', '0'))
+        radio4.names.append(ShortName('Radio 4'))
+        radio4.names.append(MediumName('BBC Radio 4'))
+        ensemble.services.append(radio4)
+        
+        # Radio 5
+        radio5 = Service(ContentId('e1', 'ca15', 'c225', '0'))
+        radio5.names.append(ShortName('Radio 5'))
+        radio5.names.append(MediumName('BBC Radio 5'))
+        ensemble.services.append(radio5)
+
+        print marshall(info, indent='   ')
+```
+
+## Element Listener
+
+A listener is applied to most elements when serializing, and can be passed in during the XML marshalling phase:
+
+```
+xml = marshall(epg, listener=augmenter)
+```
+
+Where `schedule_augmenter` is a class implementing the `dabepg.xml.MarshallListener` interface:
+
+```
+class MarshallListener:
+    
+    def on_element(self, doc, object, element):
+        pass
+```
+
+Where `doc` is the DOM document object, `object` is the originating API object that is being serialized, and `element` is the resultant element that can be modified.
+
+Additional elements can be added, or generated elements and attributes modified to suit.
+
 
