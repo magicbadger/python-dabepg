@@ -2,7 +2,9 @@
 
 A python implementation of the ETSI DAB EPG XML standard (ETSI TS 102 818 v1.5), incorporating an XML and binary marshaller conforming to ETSI TS 102 371. 
 
-This can be used by broadcasters for producing or parsing EPG data to a DAB multiplex for broadcast, or for general schedule interfacing. It can also be used for producing data based around the DAB EPG standard, such as for [http://www.radioplayer.co.uk UK Radioplayer].
+This can be used by broadcasters for producing or parsing EPG data to a DAB multiplex for broadcast, or for general schedule interfacing. It can also be used for producing data based on DAB EPG standard, such as for UK Radioplayer.
+
+Note that this library covers the older versions of ETSI TS 102 818 and ETSI TS 102 371. For the latest versions of these specifications, A Python API for Hybrid Radio SPI (https://github.com/magicbadger/python-hybridspi) and for its DAB binary encoded form (https://github.com/magicbadger/python-hybridspi-binary) exist.
 
 # TODO
 
